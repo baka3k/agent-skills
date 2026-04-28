@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bid Quality Gates"
+  short_description: "Evaluate bid readiness across lifecycle quality gates."
+  default_prompt: "Use $bid-quality-gates to evaluate proposal quality and mitigation actions before submission."

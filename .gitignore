@@ -1,0 +1,55 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Build artifacts
+build/
+dist/
+
+# Local runtime/cache
+cache/
+.cache/
+storage/
+.serena/
+.serena
+*.log
+
+# Env files
+.env
+.env.*
+
+# IDE/OS
+.idea/
+.vscode/
+.DS_Store
+
+# Sensitive local configs
+config/*.json
+!config/microsites.json
+
+# Keep resources tracked
+!resources/
+!resources/**
+
+# Submodule worktrees (avoid noise from nested repos)
+hyper-dev/hyper-agent
+hyper-dev/hyper-graph
+hyper-dev/hyper-mind
+hyper-dev/knowledge-hub/data/sources.json
+.github/
+!.github/
+.github/*
+!.github/workflows/
+!.github/workflows/**
+!.github/hooks/
+!.github/hooks/entire.json
+.gemini/
+!.gemini/settings.json

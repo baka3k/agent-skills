@@ -1,0 +1,67 @@
+# Bug Impact Analysis Rules for Cursor AI
+
+## Bug Analysis Workflow
+
+When asked to analyze a bug, assess its impact, or evaluate fix risk:
+
+### 1. Initial Assessment
+- Identify bug location from error message, stack trace, or user description
+- Confirm the exact file:line position
+- Determine bug type (logic error, null reference, race condition, etc.)
+
+### 2. Impact Tracing
+- **Upstream**: Find all callers of the buggy code (use Find References)
+- **Downstream**: Find all dependencies and side effects
+- **Data Flow**: Trace how data flows through the bug location
+- **Integration Points**: Check if bug affects API boundaries or external services
+
+### 3. Severity Classification
+- **Critical**: Data corruption, security vulnerability, complete service failure
+- **High**: Major feature broken, significant user impact
+- **Medium**: Partial degradation, workaround available
+- **Low**: Cosmetic issue, minor UX problem
+
+### 4. Risk Assessment
+- Calculate reach score (how many users/modules affected)
+- Assess regression risk (test coverage, code complexity)
+- Estimate fix complexity
+- Recommend priority (P0/P1/P2/P3)
+
+### 5. Recommendations
+- Suggest fix approach with alternatives
+- Define test strategy (unit/integration/regression)
+- Provide rollback plan
+- Estimate effort
+
+## Output Format
+
+Always provide:
+
+### Executive Summary
+- Severity level
+- Reach score (0-10)
+- Recommended priority
+- One-sentence summary
+
+### Impact Analysis
+- Affected modules with file paths
+- Caller breakdown (direct/indirect)
+- Dependency impact
+- User-facing features affected
+
+### Risk Assessment
+- Severity justification
+- Reach metrics
+- Regression risk factors
+
+### Recommendations
+- Fix approach
+- Test strategy
+- Rollback plan
+
+## Quality Standards
+- Cite specific file paths and function names as evidence
+- Separate facts from assumptions
+- Mark confidence levels (High/Medium/Low)
+- List unknown areas explicitly
+- Provide actionable next steps

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bid Slide Factory"
+  short_description: "Generate bid deck briefs and Gemini image directives with fallback logic."
+  default_prompt: "Use $bid-slide-factory to build the final bidding deck and image generation prompts with citations."

@@ -1,0 +1,324 @@
+{
+  "name": "agent-skills-kit",
+  "version": "1.2.0",
+  "description": "Portable AI agent skills kit for Claude Code, Cursor AI, Continue.dev, GitHub Copilot, OpenAI CodeX",
+  "author": "Agent Skills Kit Team",
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/agent-skill",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/agent-skill.git"
+  },
+  "skills": [
+    {
+      "id": "bid-estimator",
+      "name": "Bid Estimator",
+      "description": "Compute hybrid software bid estimates with best/base/worst person-month ranges and fixed-price/T&M cost ranges using WBS complexity multipliers and capped risk buffers.",
+      "category": "analysis",
+      "path": "bid-estimator/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "bid-evidence-hub",
+      "name": "Bid Evidence Hub",
+      "description": "Aggregate and normalize evidence for software bidding from mind_mcp, graph_mcp, and trusted internet sources, then emit confidence-ready evidence logs with citations.",
+      "category": "analysis",
+      "path": "bid-evidence-hub/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "bid-quality-gates",
+      "name": "Bid Quality Gates",
+      "description": "Apply proposal lifecycle quality gates for software bidding, covering scope clarity, architecture readiness, estimation confidence, delivery readiness, and production readiness.",
+      "category": "analysis",
+      "path": "bid-quality-gates/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "bid-slide-factory",
+      "name": "Bid Slide Factory",
+      "description": "Build bidding presentation decks from proposal artifacts using the Presentations skill and Gemini image generation adapter with fallback behavior when API or model checks fail.",
+      "category": "documentation",
+      "path": "bid-slide-factory/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "bid-solution-designer",
+      "name": "Bid Solution Designer",
+      "description": "Design two software delivery solution options for bidding (baseline and optimized), including architecture direction, tradeoffs, and cost-quality-timeline impacts.",
+      "category": "synthesis",
+      "path": "bid-solution-designer/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "bid-staffing-planner",
+      "name": "Bid Staffing Planner",
+      "description": "Generate phase-based staffing plans for software bidding using default effort ratios across Discovery, Foundation, Build, Stabilize/UAT, and Go-live/Hypercare.",
+      "category": "analysis",
+      "path": "bid-staffing-planner/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "bidding-orchestrator",
+      "name": "Bidding Orchestrator",
+      "description": "Orchestrate end-to-end software project bidding packages in hybrid mode (fixed-price + T&M) by coordinating evidence retrieval, solution design, quality gates, estimation, staffing plans, and slide deck generation.",
+      "category": "orchestration",
+      "path": "bidding-orchestrator/SKILL.md",
+      "dependencies": [
+        "bid-evidence-hub",
+        "bid-solution-designer",
+        "bid-quality-gates",
+        "bid-estimator",
+        "bid-staffing-planner",
+        "bid-slide-factory"
+      ],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "bug-impact-analyzer",
+      "name": "Bug Impact Analyzer",
+      "description": "Analyze bugs and evaluate their impact across the codebase by combining mind_mcp context knowledge with graph_mcp dependency tracing. Use when triaging bugs, assessing risk, planning fixes, or estimating regression scope.",
+      "category": "analysis",
+      "path": "bug-impact-analyzer/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "deep-codebase-discovery",
+      "name": "Deep Codebase Discovery",
+      "description": "Orchestrate end-to-end deep codebase discovery by combining mind_mcp project knowledge retrieval, graph_mcp semantic and call-graph exploration, and structured synthesis across repo-recon, tech-build-audit, and module-summary-report skills. Use when you need a complete onboarding-quality technical assessment with module mapping, stack/build/platform analysis, critical flows, and prioritized risks.",
+      "category": "orchestration",
+      "path": "deep-codebase-discovery/SKILL.md",
+      "dependencies": [
+        "repo-recon",
+        "tech-build-audit",
+        "module-summary-report"
+      ],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "knows",
+      "name": "Knows",
+      "description": "Unified knowledge retrieval skill that answers with evidence by prioritizing git context, then mind_mcp/graph_mcp, then memory files (memory.md, agent.md, claude/cursor notes). Use when users ask why a change happened, what impacts a function/screen, or need traceable technical context before decisions.",
+      "category": "analysis",
+      "path": "knows/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "legacy-cpp-porting-guardrails",
+      "name": "Legacy C++ Porting Guardrails",
+      "description": "Port and modernize very large legacy C/C++ classes or functions while preserving behavior with explicit guardrails, slice-by-slice migration, and parity tests. Use when files are thousands of lines, functions are hundreds to thousands of lines, logic is stateful or side-effect-heavy, and existing tests are weak or missing.",
+      "category": "porting",
+      "path": "legacy-cpp-porting-guardrails/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "module-summary-report",
+      "name": "Module Summary Report",
+      "description": "Synthesize module-level findings into a concise architecture summary using mind_mcp knowledge evidence and graph_mcp semantic/call-graph evidence, highlighting responsibilities, stack, build flow, platform targets, and key risks. Use after repository and tech/build scans when stakeholders need a readable, decision-focused report.",
+      "category": "synthesis",
+      "path": "module-summary-report/SKILL.md",
+      "dependencies": [
+        "repo-recon",
+        "tech-build-audit"
+      ],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "repo-recon",
+      "name": "Repository Reconnaissance",
+      "description": "Build a structural understanding of an unfamiliar repository by combining project knowledge-base retrieval from mind_mcp with semantic code exploration from graph_mcp, then produce a module inventory and entry-point map. Use when onboarding to a new codebase, preparing architecture reviews, planning refactors, or creating handover documentation.",
+      "category": "analysis",
+      "path": "repo-recon/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "reverse-doc-reconstruction",
+      "name": "Reverse Documentation Reconstruction",
+      "description": "Reconstruct technical documentation from source code by tracing entry points, call flows, IPC links, and domain entities, then produce requirements/use case/detail design artifacts aligned with the project templates. Use when reverse engineering legacy repositories, rebuilding missing specs, or preparing migration-ready docs from implementation-first systems.",
+      "category": "documentation",
+      "path": "reverse-doc-reconstruction/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "tech-build-audit",
+      "name": "Technology Build Audit",
+      "description": "Detect core technologies, build systems, CI/CD pipelines, deployment targets, and platform assumptions by combining mind_mcp project knowledge with graph_mcp semantic code evidence. Use when documenting an unknown project stack, preparing migrations, validating onboarding docs, or estimating build and runtime risks.",
+      "category": "analysis",
+      "path": "tech-build-audit/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    }
+  ],
+  "platforms": {
+    "claude-code": {
+      "name": "Claude Code",
+      "install_path_global": "~/.claude/skills",
+      "install_path_local": null,
+      "file_format": "SKILL.md",
+      "installer_support": true,
+      "native_skill_support": true
+    },
+    "cursor": {
+      "name": "Cursor AI",
+      "install_path_global": "~/.cursorrules",
+      "install_path_local": ".cursorrules",
+      "file_format": ".cursorrules",
+      "installer_support": true,
+      "native_skill_support": false
+    },
+    "continue": {
+      "name": "Continue.dev",
+      "install_path_global": "~/.continue/skills",
+      "install_path_local": null,
+      "file_format": "JSON",
+      "installer_support": true,
+      "native_skill_support": true
+    },
+    "copilot": {
+      "name": "GitHub Copilot",
+      "install_path_global": null,
+      "install_path_local": ".agents/skills",
+      "file_format": "SKILL.md (directory-per-skill)",
+      "installer_support": true,
+      "native_skill_support": true
+    },
+    "codex": {
+      "name": "OpenAI CodeX",
+      "install_path_global": null,
+      "install_path_local": ".openai/codex-instructions.md",
+      "file_format": "Markdown",
+      "installer_support": true,
+      "native_skill_support": false
+    }
+  },
+  "installers": {
+    "python": {
+      "script": "scripts/install_agent_kit.py",
+      "version": "1.0.0",
+      "requires_python": ">=3.7"
+    },
+    "shell": {
+      "script": "scripts/install.sh",
+      "version": "1.0.0",
+      "requires_bash": ">=4.0"
+    }
+  },
+  "tools": {
+    "converter": "scripts/convert_skill.py",
+    "verifier": "scripts/verify_install.sh",
+    "manifest_sync": "scripts/sync_manifest.py"
+  },
+  "documentation": {
+    "quick_start": "QUICK_START.md",
+    "installer_guide": "INSTALLER_README.md",
+    "cross_platform": "CROSS_PLATFORM_GUIDE.md",
+    "context_control": "template/mcp-context-control-strategy.md",
+    "prompt_templates": "template/prompt-templates/"
+  },
+  "resources": {
+    "templates": "template/",
+    "scripts": "scripts/",
+    "skill_references": "*/references/"
+  }
+}

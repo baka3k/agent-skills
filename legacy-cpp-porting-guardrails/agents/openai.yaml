@@ -1,0 +1,7 @@
+interface:
+  display_name: "Legacy C++ Port Guardrails"
+  short_description: "Safe migration of huge legacy C/C++ with parity gates."
+  default_prompt: "Use $legacy-cpp-porting-guardrails to port this large legacy C++ module with behavior parity checkpoints."
+
+policy:
+  allow_implicit_invocation: true

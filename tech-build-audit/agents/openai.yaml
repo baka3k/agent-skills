@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tech Build Audit"
+  short_description: "Detect stack, build flow, and platform targets."
+  default_prompt: "Use $tech-build-audit to identify technologies, build commands, and platform targets in this repo."

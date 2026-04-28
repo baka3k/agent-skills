@@ -1,0 +1,349 @@
+openapi: "3.1.0"
+
+info:
+  title: "{Tên API} API"
+  description: |
+    {Mô tả tổng quan API}
+
+    **API ID**: {APIID}
+    **Tài liệu thiết kế cơ bản**: {Tên file tài liệu thiết kế cơ bản}
+  version: "0.00"
+  contact:
+    name: "{Tên người phụ trách}"
+
+servers:
+  - url: "https://{host}/api/v1"
+    description: "Môi trường production"
+  - url: "https://{host-stg}/api/v1"
+    description: "Môi trường staging"
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+tags:
+  - name: "{resource}"
+    description: "{Mô tả resource}"
+
+paths:
+  /{resource}/{action}:
+    post: # GET | POST | PUT | DELETE | PATCH
+      tags:
+        - "{resource}"
+      summary: "{Tên xử lý}"
+      description: "{Mô tả chi tiết xử lý}"
+      operationId: "{operationId}"
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/{RequestSchema}"
+            example:
+              "{param1}": "{exampleValue1}"
+              "{param2}": "{exampleValue2}"
+              pagination:
+                page: 1
+                pageSize: 25
+              sort:
+                field: "{sortField}"
+                order: "asc"
+      responses:
+        "200":
+          description: "Xử lý thành công"
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+              description: "ID theo dõi request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/{ResponseSchema}"
+              example:
+                status: "success"
+                data:
+                  "{resultList}":
+                    - "{field1}": "{value1}"
+                      "{field2}": "{value2}"
+                  pagination:
+                    currentPage: 1
+                    pageSize: 25
+                    totalRecords: 0
+                    totalPages: 0
+                metadata:
+                  requestId: "req-12345"
+                  timestamp: "2026-04-02T10:30:00Z"
+                  processingTime: "120ms"
+        "400":
+          description: "Lỗi request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_param:
+                  summary: "ERR001 - Điều kiện tìm kiếm không hợp lệ"
+                  value:
+                    status: "error"
+                    error:
+                      code: "ERR001"
+                      message: "{Thông báo lỗi}"
+                      details:
+                        - field: "{fieldName}"
+                          message: "{Thông báo lỗi theo field}"
+                    metadata:
+                      requestId: "req-12345"
+                      timestamp: "2026-04-02T10:30:00Z"
+                missing_param:
+                  summary: "ERR002 - Thiếu tham số bắt buộc"
+                  value:
+                    status: "error"
+                    error:
+                      code: "ERR002"
+                      message: "Thiếu tham số bắt buộc"
+                    metadata:
+                      requestId: "req-12345"
+                      timestamp: "2026-04-02T10:30:00Z"
+        "401":
+          description: "Lỗi xác thực"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: "error"
+                error:
+                  code: "ERR003"
+                  message: "Xác thực thất bại"
+                metadata:
+                  requestId: "req-12345"
+                  timestamp: "2026-04-02T10:30:00Z"
+        "403":
+          description: "Lỗi phân quyền"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: "error"
+                error:
+                  code: "ERR004"
+                  message: "Không có quyền truy cập"
+                metadata:
+                  requestId: "req-12345"
+                  timestamp: "2026-04-02T10:30:00Z"
+        "404":
+          description: "Không tìm thấy resource"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: "error"
+                error:
+                  code: "ERR005"
+                  message: "Không tìm thấy resource"
+                metadata:
+                  requestId: "req-12345"
+                  timestamp: "2026-04-02T10:30:00Z"
+        "500":
+          description: "Lỗi nội bộ server"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: "error"
+                error:
+                  code: "ERR006"
+                  message: "Lỗi nội bộ server"
+                metadata:
+                  requestId: "req-12345"
+                  timestamp: "2026-04-02T10:30:00Z"
+        "503":
+          description: "Dịch vụ không khả dụng"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: "error"
+                error:
+                  code: "ERR007"
+                  message: "Dịch vụ không khả dụng"
+                metadata:
+                  requestId: "req-12345"
+                  timestamp: "2026-04-02T10:30:00Z"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "OAuth 2.0 / JWT Bearer Token"
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: "Xác thực bằng API Key"
+
+  schemas:
+    # ─── Request ──────────────────────────────────────────────
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          minimum: 1
+          default: 1
+          description: "Số trang"
+        pageSize:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          default: 25
+          description: "Số bản ghi mỗi trang"
+
+    Sort:
+      type: object
+      properties:
+        field:
+          type: string
+          description: "Tên field sắp xếp"
+        order:
+          type: string
+          enum: [asc, desc]
+          default: asc
+          description: "Thứ tự sắp xếp"
+
+    "{RequestSchema}":
+      type: object
+      properties:
+        "{param1}":
+          type: string
+          # pattern: "^[A-Za-z0-9]{1,10}$"   # Ví dụ: chữ-số tối đa 10 ký tự
+          # maxLength: 50                       # Ví dụ: tối đa 50 ký tự
+          description: "{Tên logic 1} - {Mô tả}"
+        "{param2}":
+          type: string
+          # maxLength: 50
+          description: "{Tên logic 2} - {Mô tả}"
+        "{listParam}":
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: "{Tên logic danh sách} - {Mô tả}"
+          example: ["code1", "code2"]
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        sort:
+          $ref: "#/components/schemas/Sort"
+
+    # ─── Response ──────────────────────────────────────────────
+    "{ResultItem}":
+      type: object
+      properties:
+        "{field1}":
+          type: string
+          description: "{Tên logic 1}"
+        "{field2}":
+          type: string
+          description: "{Tên logic 2}"
+      # required:
+      #   - "{field1}"
+
+    PaginationResult:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          format: int32
+          description: "Số trang hiện tại"
+        pageSize:
+          type: integer
+          format: int32
+          description: "Số bản ghi mỗi trang"
+        totalRecords:
+          type: integer
+          format: int64
+          description: "Tổng số bản ghi"
+        totalPages:
+          type: integer
+          format: int32
+          description: "Tổng số trang"
+
+    Metadata:
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: "ID theo dõi request"
+        timestamp:
+          type: string
+          format: date-time
+          description: "Thời điểm xử lý (ISO 8601)"
+        processingTime:
+          type: string
+          description: "Thời gian xử lý (ví dụ: 120ms)"
+
+    "{ResponseSchema}":
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        data:
+          type: object
+          properties:
+            "{resultList}":
+              type: array
+              items:
+                $ref: "#/components/schemas/{ResultItem}"
+            pagination:
+              $ref: "#/components/schemas/PaginationResult"
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+
+    # ─── Error ───────────────────────────────────────────────────
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          description: "Tên field xảy ra lỗi"
+        message:
+          type: string
+          description: "Thông báo lỗi theo field"
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: "Mã lỗi (ERR001~ERR007 + mã lỗi đặc thù API)"
+            message:
+              type: string
+              description: "Thông báo lỗi"
+            details:
+              type: array
+              items:
+                $ref: "#/components/schemas/ErrorDetail"
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+      required:
+        - status
+        - error
+        - metadata

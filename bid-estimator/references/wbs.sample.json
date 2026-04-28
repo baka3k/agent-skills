@@ -1,0 +1,5 @@
+[
+  {"module": "Identity", "base_pm": 5, "complexity": "high"},
+  {"module": "Core API", "base_pm": 8, "complexity": "high"},
+  {"module": "Admin", "base_pm": 4, "complexity": "medium"}
+]

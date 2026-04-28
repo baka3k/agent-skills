@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bid Solution Designer"
+  short_description: "Generate baseline and optimized bid solution options with tradeoffs."
+  default_prompt: "Use $bid-solution-designer to generate two solution options with cost-quality-timeline tradeoffs."

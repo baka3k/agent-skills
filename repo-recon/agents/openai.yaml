@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repo Recon"
+  short_description: "Map codebase modules, ownership slices, and entry points."
+  default_prompt: "Use $repo-recon to map this repository and produce a module inventory with key entry points."

@@ -1,0 +1,42 @@
+client_context:
+  client_name: Example Client
+  industry: FinTech
+  geography: US
+business_goals:
+  - Launch v1 in 6 months with core onboarding and payments.
+  - Meet enterprise security and audit requirements.
+scope_in:
+  - User onboarding and KYC flow
+  - Transaction processing APIs
+  - Admin operations dashboard
+scope_out:
+  - Legacy core banking replacement
+  - Advanced BI analytics module
+constraints:
+  - Cloud-first on AWS
+  - Integrate with existing IAM provider
+  - PCI-DSS aligned controls
+timeline_target: "6 months"
+compliance_needs:
+  - SOC 2
+  - PCI DSS
+  - Audit logging
+unknowns:
+  integration: true
+  data_migration: true
+  nfr: true
+delivery_mode: hybrid
+target_language: en
+work_breakdown:
+  - module: Identity and Access
+    base_pm: 6
+    complexity: high
+  - module: Transaction Engine
+    base_pm: 8
+    complexity: high
+  - module: Admin Portal
+    base_pm: 5
+    complexity: medium
+  - module: Platform and DevOps
+    base_pm: 4
+    complexity: medium

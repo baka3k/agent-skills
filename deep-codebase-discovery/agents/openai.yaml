@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deep Codebase Discovery"
+  short_description: "Orchestrate MCP-first deep codebase analysis workflow."
+  default_prompt: "Use $deep-codebase-discovery to run end-to-end codebase discovery with mind_mcp and graph_mcp."

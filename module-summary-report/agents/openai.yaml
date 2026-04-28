@@ -1,0 +1,4 @@
+interface:
+  display_name: "Module Summary Report"
+  short_description: "Write concise architecture and module summaries."
+  default_prompt: "Use $module-summary-report to write a concise architecture summary from module-level findings."

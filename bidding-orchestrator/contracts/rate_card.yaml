@@ -1,0 +1,58 @@
+currency: USD
+region: offshore
+blended_rate_policy:
+  policy_name: weighted_average
+  blended_monthly_rate: 11500
+roles:
+  - role: Presales SA
+    seniority: senior
+    monthly_rate: 14000
+    region: offshore
+  - role: Architect
+    seniority: senior
+    monthly_rate: 15000
+    region: offshore
+  - role: Tech Lead
+    seniority: senior
+    monthly_rate: 14500
+    region: offshore
+  - role: Lead Dev
+    seniority: senior
+    monthly_rate: 13000
+    region: offshore
+  - role: Backend Dev
+    seniority: mid
+    monthly_rate: 10000
+    region: offshore
+  - role: Frontend Dev
+    seniority: mid
+    monthly_rate: 9500
+    region: offshore
+  - role: QA Lead
+    seniority: senior
+    monthly_rate: 12000
+    region: offshore
+  - role: QA Engineer
+    seniority: mid
+    monthly_rate: 9000
+    region: offshore
+  - role: PM
+    seniority: senior
+    monthly_rate: 13000
+    region: offshore
+  - role: BA
+    seniority: mid
+    monthly_rate: 9500
+    region: offshore
+  - role: DevOps
+    seniority: senior
+    monthly_rate: 12500
+    region: offshore
+  - role: SRE/DevOps
+    seniority: senior
+    monthly_rate: 13000
+    region: offshore
+  - role: Support Engineer
+    seniority: mid
+    monthly_rate: 8500
+    region: offshore

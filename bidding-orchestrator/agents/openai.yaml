@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bidding Orchestrator"
+  short_description: "Build complete software bid packages with hybrid pricing outputs."
+  default_prompt: "Use $bidding-orchestrator to generate a full hybrid bid package with evidence, estimation, staffing plan, quality gates, and slides."

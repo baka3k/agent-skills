@@ -1,0 +1,4 @@
+interface:
+  display_name: "Knows"
+  short_description: "Unify Git, MCP, and memory evidence into traceable answers."
+  default_prompt: "Use $knows to answer this with evidence from git history, mind_mcp/graph_mcp, and memory files, then provide confidence and unresolved conflicts."

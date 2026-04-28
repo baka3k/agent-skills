@@ -1,0 +1,10 @@
+mind_source_ids:
+  - hyperdev-architecture.md
+graph_project_ids:
+  - e834dbe5-d014-480e-a3f9-bd3bd3f49e68
+parser_type: python
+internet_domains_allowlist:
+  - ai.google.dev
+  - dora.dev
+  - nasa.gov
+recency_days: 120

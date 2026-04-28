@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bid Estimator"
+  short_description: "Calculate best/base/worst PM and hybrid bid cost ranges."
+  default_prompt: "Use $bid-estimator to compute effort and cost ranges for fixed-price and T&M scenarios."

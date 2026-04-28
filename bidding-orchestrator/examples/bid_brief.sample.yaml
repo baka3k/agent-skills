@@ -1,0 +1,39 @@
+client_context:
+  client_name: Acme Payments
+  industry: FinTech
+  geography: US
+business_goals:
+  - Deploy a secure payment orchestration platform.
+  - Reduce manual operations by 40%.
+scope_in:
+  - Merchant onboarding
+  - Payment routing engine
+  - Ops dashboard
+scope_out:
+  - ERP replacement
+constraints:
+  - Reuse existing authentication provider
+  - AWS target deployment
+timeline_target: "7 months"
+compliance_needs:
+  - PCI DSS
+  - SOC 2
+unknowns:
+  integration: true
+  data_migration: false
+  nfr: true
+delivery_mode: hybrid
+target_language: en
+work_breakdown:
+  - module: Merchant Onboarding
+    base_pm: 5
+    complexity: medium
+  - module: Routing Engine
+    base_pm: 9
+    complexity: high
+  - module: Operations Dashboard
+    base_pm: 4
+    complexity: medium
+  - module: Platform Hardening
+    base_pm: 3
+    complexity: medium

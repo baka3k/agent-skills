@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bid Evidence Hub"
+  short_description: "Collect and normalize bid evidence from MCP and trusted web sources."
+  default_prompt: "Use $bid-evidence-hub to produce a citation-ready evidence log for software bidding."

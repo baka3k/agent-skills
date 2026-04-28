@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reverse Doc Reconstruction"
+  short_description: "Rebuild use cases and design docs from source traces."
+  default_prompt: "Use $reverse-doc-reconstruction to reconstruct use case and detail design documents from this source code."

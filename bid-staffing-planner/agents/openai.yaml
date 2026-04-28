@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bid Staffing Planner"
+  short_description: "Build phase-based staffing plans from total effort."
+  default_prompt: "Use $bid-staffing-planner to generate phase and role staffing plans for bid delivery."
