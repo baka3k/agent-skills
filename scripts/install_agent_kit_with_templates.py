@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Install agent skills to supported AI platforms with template support.
-
-Enhanced version that:
-- Copies template/ directory for skills that need it
-- Allows installation from custom kit root (any directory)
-- Supports project-specific skill installations
-"""
+"""Install agent skills to supported AI platforms with template support."""
 
 from __future__ import annotations
 
@@ -84,7 +78,7 @@ class EnhancedAgentSkillsInstaller:
         scope: str = "local",
         project_root: Path | None = None,
         include_templates: bool = True,
-        template_source: Path | None = None
+        template_source: Path | None = None,
     ):
         self.kit_root = kit_root
         self.agent = agent
@@ -96,8 +90,6 @@ class EnhancedAgentSkillsInstaller:
 
         if not self.agent_config:
             raise ValueError(f"Unknown agent: {agent}")
-
-        # Verify kit root exists
         if not self.kit_root.exists():
             raise ValueError(f"Kit root does not exist: {self.kit_root}")
 
@@ -114,7 +106,6 @@ class EnhancedAgentSkillsInstaller:
         return install_path
 
     def discover_skill_files(self) -> List[Path]:
-        """Discover all SKILL.md files in the kit root."""
         skills: List[Path] = []
         for item in sorted(self.kit_root.iterdir()):
             skill_file = item / "SKILL.md"
@@ -134,17 +125,13 @@ class EnhancedAgentSkillsInstaller:
         return backup_path
 
     def _copy_optional_dir(self, src_root: Path, dst_root: Path, name: str) -> bool:
-        """Copy optional directory if it exists. Returns True if copied."""
         src = src_root / name
         if not src.exists() or not src.is_dir():
             return False
-
-        dst = dst_root / name
-        shutil.copytree(src, dst, dirs_exist_ok=True)
+        shutil.copytree(src, dst_root / name, dirs_exist_ok=True)
         return True
 
     def _copy_shared_scripts(self, dst_root: Path) -> bool:
-        """Copy kit-level shared scripts into a skill when it has no local scripts."""
         shared_scripts = self.kit_root / "scripts"
         if not shared_scripts.exists() or not shared_scripts.is_dir():
             return False
@@ -152,21 +139,15 @@ class EnhancedAgentSkillsInstaller:
         return True
 
     def _copy_templates(self, dst_root: Path) -> bool:
-        """Copy template directory to installation. Returns True if copied."""
         if not self.include_templates:
             return False
-
-        template_src = self.template_source
-        if not template_src.exists() or not template_src.is_dir():
-            print(f"  ⚠ Template directory not found: {template_src}")
+        if not self.template_source.exists() or not self.template_source.is_dir():
+            print(f"  Warning: template directory not found: {self.template_source}")
             return False
-
         template_dst = dst_root / "template"
-        shutil.copytree(template_src, template_dst, dirs_exist_ok=True)
-
-        # Count templates
+        shutil.copytree(self.template_source, template_dst, dirs_exist_ok=True)
         template_count = len(list(template_dst.rglob("*.md")))
-        print(f"  ✓ Copied {template_count} template files to template/")
+        print(f"  Copied {template_count} template files to {template_dst}")
         return True
 
     def _prune_pycache(self, root: Path) -> None:
@@ -178,42 +159,32 @@ class EnhancedAgentSkillsInstaller:
     def _install_claude(self, install_path: Path, skills: List[Dict]) -> int:
         install_path.mkdir(parents=True, exist_ok=True)
 
-        for skill in skills:
+        for index, skill in enumerate(skills):
             dst_root = install_path / skill["name"]
             dst_root.mkdir(parents=True, exist_ok=True)
-
-            # Copy SKILL.md
             shutil.copy2(skill["path"], dst_root / "SKILL.md")
-
-            # Copy optional directories
             self._copy_optional_dir(skill["dir"], dst_root, "references")
             scripts_copied = self._copy_optional_dir(skill["dir"], dst_root, "scripts")
             if not scripts_copied:
                 self._copy_shared_scripts(dst_root)
             self._copy_optional_dir(skill["dir"], dst_root, "assets")
-
-            # Copy templates if enabled (once per installation, not per skill)
-            # Only copy for the first skill to avoid duplication
-            if skill == skills[0]:
-                self._copy_templates(install_path)
-
             self._prune_pycache(dst_root / "scripts")
+
+            if index == 0:
+                self._copy_templates(install_path)
 
         return len(skills)
 
     def _install_continue(self, install_path: Path, skills: List[Dict]) -> int:
         install_path.mkdir(parents=True, exist_ok=True)
         written = 0
-
         for skill in skills:
             content = convert_to_continue(skill)
             output_file = install_path / f"{skill['name']}.json"
-            output_file.write_text(
-                json.dumps(content, indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8",
-            )
+            output_file.write_text(json.dumps(content, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             written += 1
-
+        if self.include_templates:
+            self._copy_templates(install_path)
         return written
 
     def _build_bundle_content(self, mode: str, skills: List[Dict]) -> str:
@@ -252,13 +223,8 @@ class EnhancedAgentSkillsInstaller:
         content = self._build_bundle_content(mode, skills)
         install_path.write_text(content, encoding="utf-8")
 
-        # Copy templates if enabled
         if self.include_templates:
-            template_dst = install_path.parent.parent / "template"
-            if self.template_source.exists():
-                shutil.copytree(self.template_source, template_dst, dirs_exist_ok=True)
-                template_count = len(list(template_dst.rglob("*.md")))
-                print(f"  ✓ Copied {template_count} template files")
+            self._copy_templates(self.project_root)
 
         return len(skills)
 
@@ -268,10 +234,8 @@ class EnhancedAgentSkillsInstaller:
         print(f"{'='*60}")
         print(f"Agent: {self.agent_config['name']}")
         print(f"Scope: {self.scope}")
-        print(f"Kit root: {self.kit_root}")
+        print(f"Project root: {self.project_root}")
         print(f"Include templates: {self.include_templates}")
-        if self.include_templates:
-            print(f"Template source: {self.template_source}")
         print(f"{'='*60}\n")
 
         install_path = self.get_install_path()
@@ -288,7 +252,7 @@ class EnhancedAgentSkillsInstaller:
             print("\n[DRY RUN] Would install to:")
             print(f"  {install_path}")
             if self.include_templates:
-                print(f"  Templates: {self.template_source} -> {install_path / 'template'}")
+                print(f"  Templates from: {self.template_source}")
             return True
 
         response = input("\nProceed with installation? [y/N]: ").strip().lower()
@@ -308,10 +272,8 @@ class EnhancedAgentSkillsInstaller:
         else:
             raise ValueError(f"Unsupported installer mode: {mode}")
 
-        print(f"\n✓ Successfully installed {installed_count} skills")
-        print(f"✓ Installation path: {install_path}")
-        if self.include_templates:
-            print(f"✓ Templates included in installation")
+        print(f"\nSuccessfully installed {installed_count} skills")
+        print(f"Installation path: {install_path}")
 
         self._print_post_install_instructions()
         return True
@@ -321,64 +283,49 @@ class EnhancedAgentSkillsInstaller:
         print("Post-Installation Instructions")
         print(f"{'='*60}")
 
-        if self.agent == "claude-code":
+        if self.agent == "copilot":
             print(
                 """
-To use the skills in Claude Code:
-  1. Restart Claude Code CLI
-  2. Use: /skill <skill-name>
-  3. Example: /skill deep-codebase-discovery
-
-Note: Templates are included in the installation.
-Skills like reverse-doc-reconstruction will use templates from:
-  {install_path}/template/
+For GitHub Copilot, skills are installed under .github/skills in your selected folder.
+Example: current-folder install -> <current>/.github/skills
 """
             )
-        elif self.agent == "cursor":
+
+
+def _pick_from_menu(prompt: str, option_count: int) -> int:
+    while True:
+        raw = input(prompt).strip()
+        try:
+            value = int(raw)
+        except ValueError:
+            print("Invalid choice. Please enter a number.")
+            continue
+        if 1 <= value <= option_count:
+            return value
+        print("Invalid choice. Please try again.")
+
+
+def _resolve_scope_and_root(
+    selected_agent: str,
+    requested_scope: str,
+    requested_project_root: Path,
+) -> tuple[str, Path]:
+    config = EnhancedAgentSkillsInstaller.AGENT_CONFIGS[selected_agent]
+    paths = config["install_paths"]
+    scope = requested_scope
+
+    if paths.get(scope) is None:
+        fallback_scope = "global" if scope == "local" else "local"
+        if paths.get(fallback_scope) is not None:
             print(
-                """
-To use the skills in Cursor AI:
-  1. Restart Cursor editor
-  2. Skills are now active in .cursorrules
-  3. Ask Cursor normally and mention the analysis intent
-
-Note: Templates are copied to {project_root}/template/
-"""
+                f"Info: {config['name']} does not support {scope} scope. "
+                f"Using {fallback_scope}."
             )
-        elif self.agent == "continue":
-            print(
-                """
-To use the skills in Continue.dev:
-  1. Restart Continue extension
-  2. Use Ctrl+Shift+A (Cmd+Shift+A on Mac)
-  3. Select a generated skill from the menu
+            scope = fallback_scope
+        else:
+            raise ValueError(f"{config['name']} has no valid install scope")
 
-Note: Templates are copied to ~/.continue/skills/template/
-"""
-            )
-        elif self.agent == "copilot":
-            print(
-                """
-To use the skills in GitHub Copilot:
-  1. Open your repository
-  2. Ensure skills are under .github/skills/
-  3. Pick the relevant skill folder for the task context
-
-Note: Templates are copied to {project_root}/template/
-Skills can now access templates locally.
-"""
-            )
-        elif self.agent == "codex":
-            print(
-                """
-To use the skills in OpenAI CodeX:
-  1. Open .openai/codex-instructions.md
-  2. Copy the relevant workflow into your Codex/ChatGPT session
-  3. Provide repository context and run the analysis
-
-Note: Templates are copied to {project_root}/template/
-"""
-            )
+    return scope, requested_project_root.resolve()
 
 
 def interactive_mode(kit_root: Path) -> int:
@@ -386,72 +333,76 @@ def interactive_mode(kit_root: Path) -> int:
     print("Agent Skills Kit - Interactive Installer (Enhanced)")
     print(f"{'='*60}\n")
 
-    # Ask for custom kit root
-    custom_kit = input(f"Kit root [{kit_root}]: ").strip()
-    if custom_kit:
-        kit_root = Path(custom_kit).resolve()
-        if not kit_root.exists():
-            print(f"Error: Kit root does not exist: {kit_root}")
-            return 1
 
     agents = list(EnhancedAgentSkillsInstaller.AGENT_CONFIGS.keys())
-    print("Select AI Agent:")
+    print("Step 1/3 - Select AI Agent:")
     for i, agent_key in enumerate(agents, 1):
         config = EnhancedAgentSkillsInstaller.AGENT_CONFIGS[agent_key]
         print(f"  {i}. {config['name']} - {config['description']}")
 
-    selected_agent = ""
-    while not selected_agent:
-        try:
-            choice = int(input(f"\nSelect agent (1-{len(agents)}): ").strip())
-            if 1 <= choice <= len(agents):
-                selected_agent = agents[choice - 1]
-            else:
-                print("Invalid choice. Please try again.")
-        except ValueError:
-            print("Invalid choice. Please try again.")
-
+    agent_choice = _pick_from_menu(f"\nSelect agent (1-{len(agents)}): ", len(agents))
+    selected_agent = agents[agent_choice - 1]
     config = EnhancedAgentSkillsInstaller.AGENT_CONFIGS[selected_agent]
+
+    print("\nStep 2/3 - Select installation location:")
     global_path = config["install_paths"].get("global")
     local_path = config["install_paths"].get("local")
 
-    if global_path and local_path:
-        response = input("\nInstall globally or locally? [G/l]: ").strip().lower()
-        scope = "global" if response.startswith("g") else "local"
-    elif global_path:
-        scope = "global"
-    else:
-        scope = "local"
+    labels: List[str] = []
+    actions: List[tuple[str, Path]] = []
 
-    # Ask about templates
-    include_templates = input("\nInclude template directory? [Y/n]: ").strip().lower()
-    include_templates = include_templates != "n"
+    if global_path is not None:
+        labels.append(f"Global ({global_path})")
+        actions.append(("global", Path.cwd()))
+    if local_path is not None:
+        labels.append(f"Current folder ({Path.cwd()})")
+        actions.append(("local", Path.cwd()))
+        labels.append("Custom folder")
+        actions.append(("local", Path.cwd()))
 
-    # Ask for custom template source
+    for i, label in enumerate(labels, 1):
+        print(f"  {i}. {label}")
+
+    location_choice = _pick_from_menu(f"\nSelect location (1-{len(labels)}): ", len(labels))
+    chosen_scope, chosen_root = actions[location_choice - 1]
+    if labels[location_choice - 1] == "Custom folder":
+        custom_root = input("Enter custom folder path: ").strip()
+        if not custom_root:
+            print("Error: Custom folder path is required.")
+            return 1
+        chosen_root = Path(custom_root).expanduser().resolve()
+
+    selected_scope, selected_project_root = _resolve_scope_and_root(
+        selected_agent=selected_agent,
+        requested_scope=chosen_scope,
+        requested_project_root=chosen_root,
+    )
+
+    include_templates = True
     template_source = None
-    if include_templates:
-        custom_template = input("Template source (press Enter for default): ").strip()
-        if custom_template:
-            template_source = Path(custom_template).resolve()
-            if not template_source.exists():
-                print(f"Warning: Template source not found: {template_source}")
-                print("Will use default template directory")
-                template_source = None
 
     installer = EnhancedAgentSkillsInstaller(
         kit_root=kit_root,
         agent=selected_agent,
-        scope=scope,
+        scope=selected_scope,
+        project_root=selected_project_root,
         include_templates=include_templates,
-        template_source=template_source
+        template_source=template_source,
     )
+
+    print("\nStep 3/3 - Confirm")
+    print(f"  Agent: {config['name']} ({selected_agent})")
+    print(f"  Scope: {selected_scope}")
+    print(f"  Project root: {selected_project_root}")
+    print(f"  Install path: {installer.get_install_path()}")
+    print(f"  Include templates: {include_templates}")
+
     return 0 if installer.install() else 1
 
 
 def list_agents() -> None:
     print("\nSupported AI Agents:")
     print(f"{'='*60}\n")
-
     for agent_key, config in EnhancedAgentSkillsInstaller.AGENT_CONFIGS.items():
         print(f"**{config['name']}** ({agent_key})")
         print(f"  Description: {config['description']}")
@@ -469,47 +420,18 @@ Examples:
   # Interactive mode
   python scripts/install_agent_kit_with_templates.py --interactive
 
-  # Install for Claude Code (from current directory)
-  python scripts/install_agent_kit_with_templates.py --agent claude-code --scope global
+  # Install into current folder
+  python scripts/install_agent_kit_with_templates.py . --agent copilot
 
-  # Install from custom kit root (e.g., your project directory)
-  python scripts/install_agent_kit_with_templates.py \\
-    --kit-root /path/to/agent-skill \\
-    --agent claude-code \\
-    --scope global
-
-  # Install for your project with templates
-  cd /path/to/your-project
-  python /path/to/agent-skill/scripts/install_agent_kit_with_templates.py \\
-    --kit-root /path/to/agent-skill \\
-    --agent copilot \\
-    --scope local \\
-    --include-templates
-
-  # Install with custom template location
-  python scripts/install_agent_kit_with_templates.py \\
-    --agent claude-code \\
-    --scope global \\
-    --include-templates \\
-    --template-source /path/to/custom-templates
-
-  # Install without templates
-  python scripts/install_agent_kit_with_templates.py \\
-    --agent cursor \\
-    --scope global \\
-    --no-templates
-
-  # List supported agents
-  python scripts/install_agent_kit_with_templates.py --list
+  # Install from custom kit root
+  python scripts/install_agent_kit_with_templates.py --kit-root /path/to/agent-skill --agent claude-code --scope global
 
   # Dry run
-  python scripts/install_agent_kit_with_templates.py \\
-    --agent cursor \\
-    --kit-root /path/to/agent-skill \\
-    --dry-run
+  python scripts/install_agent_kit_with_templates.py --agent cursor --dry-run
 """,
     )
 
+    parser.add_argument("install_target", nargs="?", help="Use '.' to install to current folder or provide a custom folder path")
     parser.add_argument("--agent", choices=list(EnhancedAgentSkillsInstaller.AGENT_CONFIGS.keys()), help="Target AI agent")
     parser.add_argument("--scope", choices=["global", "local"], default="local", help="Installation scope")
     parser.add_argument("--kit-root", type=Path, help="Custom kit root path (default: parent of scripts/)")
@@ -523,11 +445,7 @@ Examples:
 
     args = parser.parse_args()
 
-    # Determine kit root
-    if args.kit_root:
-        kit_root = args.kit_root.resolve()
-    else:
-        kit_root = Path(__file__).resolve().parent.parent
+    kit_root = args.kit_root.resolve() if args.kit_root else Path(__file__).resolve().parent.parent
 
     if args.list:
         list_agents()
@@ -539,29 +457,32 @@ Examples:
     try:
         selected_agent = args.agent
         selected_scope = args.scope
+        selected_project_root = args.project_root
+
+        if args.install_target:
+            if args.install_target == ".":
+                selected_scope = "local"
+                selected_project_root = Path.cwd()
+            else:
+                selected_scope = "local"
+                selected_project_root = Path(args.install_target).expanduser().resolve()
 
         if not selected_agent:
-            selected_agent = "agents"
-            selected_scope = "global"
-            print("Info: No --agent provided. Using default target: ~/.agents/skills")
+            return interactive_mode(kit_root)
 
-        config = EnhancedAgentSkillsInstaller.AGENT_CONFIGS[selected_agent]
-        if config["install_paths"].get(selected_scope) is None:
-            fallback_scope = "global" if selected_scope == "local" else "local"
-            if config["install_paths"].get(fallback_scope) is not None:
-                print(
-                    f"Info: {config['name']} does not support {selected_scope} scope. "
-                    f"Using {fallback_scope}."
-                )
-                selected_scope = fallback_scope
+        selected_scope, selected_project_root = _resolve_scope_and_root(
+            selected_agent=selected_agent,
+            requested_scope=selected_scope,
+            requested_project_root=selected_project_root,
+        )
 
         installer = EnhancedAgentSkillsInstaller(
             kit_root=kit_root,
             agent=selected_agent,
             scope=selected_scope,
-            project_root=args.project_root,
+            project_root=selected_project_root,
             include_templates=args.include_templates,
-            template_source=args.template_source
+            template_source=args.template_source,
         )
         return 0 if installer.install(dry_run=args.dry_run) else 1
     except ValueError as e:

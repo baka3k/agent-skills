@@ -203,6 +203,7 @@ class AgentSkillsInstaller:
         print(f"{'='*60}")
         print(f"Agent: {self.agent_config['name']}")
         print(f"Scope: {self.scope}")
+        print(f"Project root: {self.project_root}")
         print(f"{'='*60}\n")
 
         install_path = self.get_install_path()
@@ -295,6 +296,41 @@ To use the skills in OpenAI CodeX:
             )
 
 
+def _pick_from_menu(prompt: str, options: List[str]) -> int:
+    while True:
+        raw = input(prompt).strip()
+        try:
+            value = int(raw)
+        except ValueError:
+            print("Invalid choice. Please enter a number.")
+            continue
+        if 1 <= value <= len(options):
+            return value
+        print("Invalid choice. Please try again.")
+
+
+def _resolve_scope_and_root(
+    selected_agent: str,
+    requested_scope: str,
+    requested_project_root: Path,
+) -> tuple[str, Path]:
+    config = AgentSkillsInstaller.AGENT_CONFIGS[selected_agent]
+    paths = config["install_paths"]
+    scope = requested_scope
+
+    if paths.get(scope) is None:
+        fallback_scope = "global" if scope == "local" else "local"
+        if paths.get(fallback_scope) is not None:
+            print(
+                f"Info: {config['name']} does not support {scope} scope. "
+                f"Using {fallback_scope}."
+            )
+            scope = fallback_scope
+        else:
+            raise ValueError(f"{config['name']} has no valid install scope")
+
+    return scope, requested_project_root.resolve()
+
 
 def interactive_mode(kit_root: Path) -> int:
     print(f"\n{'='*60}")
@@ -302,37 +338,67 @@ def interactive_mode(kit_root: Path) -> int:
     print(f"{'='*60}\n")
 
     agents = list(AgentSkillsInstaller.AGENT_CONFIGS.keys())
-    print("Select AI Agent:")
+
+    print("Step 1/3 - Select AI Agent:")
     for i, agent_key in enumerate(agents, 1):
         config = AgentSkillsInstaller.AGENT_CONFIGS[agent_key]
         print(f"  {i}. {config['name']} - {config['description']}")
 
-    selected_agent = ""
-    while not selected_agent:
-        try:
-            choice = int(input(f"\nSelect agent (1-{len(agents)}): ").strip())
-            if 1 <= choice <= len(agents):
-                selected_agent = agents[choice - 1]
-            else:
-                print("Invalid choice. Please try again.")
-        except ValueError:
-            print("Invalid choice. Please try again.")
-
+    agent_choice = _pick_from_menu(f"\nSelect agent (1-{len(agents)}): ", agents)
+    selected_agent = agents[agent_choice - 1]
     config = AgentSkillsInstaller.AGENT_CONFIGS[selected_agent]
+
+    print("\nStep 2/3 - Select installation location:")
     global_path = config["install_paths"].get("global")
     local_path = config["install_paths"].get("local")
 
-    if global_path and local_path:
-        response = input("\nInstall globally or locally? [G/l]: ").strip().lower()
-        scope = "global" if response.startswith("g") else "local"
-    elif global_path:
-        scope = "global"
-    else:
-        scope = "local"
+    menu_labels: List[str] = []
+    menu_actions: List[tuple[str, Path]] = []
 
-    installer = AgentSkillsInstaller(kit_root=kit_root, agent=selected_agent, scope=scope)
+    if global_path is not None:
+        menu_labels.append(f"Global ({global_path})")
+        menu_actions.append(("global", Path.cwd()))
+
+    if local_path is not None:
+        menu_labels.append(f"Current folder ({Path.cwd()})")
+        menu_actions.append(("local", Path.cwd()))
+        menu_labels.append("Custom folder")
+        menu_actions.append(("local", Path.cwd()))
+
+    for i, label in enumerate(menu_labels, 1):
+        print(f"  {i}. {label}")
+
+    location_choice = _pick_from_menu(f"\nSelect location (1-{len(menu_labels)}): ", menu_labels)
+    chosen_scope, chosen_root = menu_actions[location_choice - 1]
+
+    if local_path is not None and menu_labels[location_choice - 1] == "Custom folder":
+        custom_root = input("Enter custom folder path: ").strip()
+        if not custom_root:
+            print("Error: Custom folder path is required.")
+            return 1
+        chosen_root = Path(custom_root).expanduser().resolve()
+
+    selected_scope, selected_project_root = _resolve_scope_and_root(
+        selected_agent=selected_agent,
+        requested_scope=chosen_scope,
+        requested_project_root=chosen_root,
+    )
+
+    installer = AgentSkillsInstaller(
+        kit_root=kit_root,
+        agent=selected_agent,
+        scope=selected_scope,
+        project_root=selected_project_root,
+    )
+    resolved_install_path = installer.get_install_path()
+
+    print("\nStep 3/3 - Confirm")
+    print(f"  Agent: {config['name']} ({selected_agent})")
+    print(f"  Scope: {selected_scope}")
+    print(f"  Project root: {selected_project_root}")
+    print(f"  Install path: {resolved_install_path}")
+
     return 0 if installer.install() else 1
-
 
 
 def list_agents() -> None:
@@ -347,7 +413,6 @@ def list_agents() -> None:
         print()
 
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Install agent skills to AI platforms",
@@ -357,14 +422,11 @@ Examples:
   # Interactive mode
   python scripts/install_agent_kit.py --interactive
 
+  # Install into current folder from terminal
+  python scripts/install_agent_kit.py . --agent copilot
+
   # Install for Claude Code
   python scripts/install_agent_kit.py --agent claude-code --scope global
-
-  # Install for Cursor globally
-  python scripts/install_agent_kit.py --agent cursor --scope global
-
-  # Install for Continue.dev globally
-  python scripts/install_agent_kit.py --agent continue --scope global
 
   # Install for OpenAI CodeX locally
   python scripts/install_agent_kit.py --agent codex --scope local
@@ -377,6 +439,7 @@ Examples:
 """,
     )
 
+    parser.add_argument("install_target", nargs="?", help="Use '.' to install to current folder or provide a custom folder path")
     parser.add_argument("--agent", choices=list(AgentSkillsInstaller.AGENT_CONFIGS.keys()), help="Target AI agent")
     parser.add_argument("--scope", choices=["global", "local"], default="local", help="Installation scope")
     parser.add_argument("--project-root", type=Path, default=Path.cwd(), help="Project root (for local installation)")
@@ -397,27 +460,30 @@ Examples:
     try:
         selected_agent = args.agent
         selected_scope = args.scope
+        selected_project_root = args.project_root
+
+        if args.install_target:
+            if args.install_target == ".":
+                selected_scope = "local"
+                selected_project_root = Path.cwd()
+            else:
+                selected_scope = "local"
+                selected_project_root = Path(args.install_target).expanduser().resolve()
 
         if not selected_agent:
-            selected_agent = "agents"
-            selected_scope = "global"
-            print("Info: No --agent provided. Using default target: ~/.agents/skills")
+            return interactive_mode(kit_root)
 
-        config = AgentSkillsInstaller.AGENT_CONFIGS[selected_agent]
-        if config["install_paths"].get(selected_scope) is None:
-            fallback_scope = "global" if selected_scope == "local" else "local"
-            if config["install_paths"].get(fallback_scope) is not None:
-                print(
-                    f"Info: {config['name']} does not support {selected_scope} scope. "
-                    f"Using {fallback_scope}."
-                )
-                selected_scope = fallback_scope
+        selected_scope, selected_project_root = _resolve_scope_and_root(
+            selected_agent=selected_agent,
+            requested_scope=selected_scope,
+            requested_project_root=selected_project_root,
+        )
 
         installer = AgentSkillsInstaller(
             kit_root=kit_root,
             agent=selected_agent,
             scope=selected_scope,
-            project_root=args.project_root,
+            project_root=selected_project_root,
         )
         success = installer.install(dry_run=args.dry_run)
         return 0 if success else 1

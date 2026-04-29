@@ -90,7 +90,7 @@ def scan_file(file_path: Path) -> List[Dict]:
 
 def main():
     """Main scan function."""
-    base_dir = Path('/Users/user/AI/agent-skill')
+    base_dir = Path('/Users/hieplq1.rpm/AI/agent-skill')
     skill_dirs = [
         'bug-impact-analyzer',
         'module-summary-report',

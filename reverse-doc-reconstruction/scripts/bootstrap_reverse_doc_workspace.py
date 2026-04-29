@@ -63,7 +63,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--module",
         required=True,
-        help="Module or scope id (example: vtgm01).",
+        help="Module or scope id (example: ctSample01).",
     )
     parser.add_argument(
         "--owner",

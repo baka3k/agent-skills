@@ -1151,4 +1151,4 @@ limitations:
 
 - `references/porting-artifact-templates.md` for contract, ledger, and parity-case templates
 - `references/mcp-porting-playbook.md` for mind_mcp and graph_mcp integration patterns
-- `references/datamgr-b0802001-findings.md` for real-world sample signals from a 27k-line legacy file
+- `references/data-ctSample01-findings.md` for real-world sample signals from a 27k-line legacy file
