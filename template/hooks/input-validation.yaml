@@ -1,0 +1,171 @@
+# Input Validation Hook
+# Centralized input validation for all skills
+
+name: input-validation
+type: pre
+version: 1.0.0
+description: "Centralized input validation for all skills"
+category: validation
+
+# Execution configuration
+timeout: 5s
+on_failure: abort  # Fail-fast strategy from validation
+
+# Implementation details
+implementation:
+  type: skill
+  ref: "input-validator"
+  integration: claude_code_settings
+
+# Validation rules
+validations:
+  # Path validation
+  path:
+    enabled: true
+    rules:
+      - name: exists
+        check: "os.path.exists(path)"
+        error_message: "Path does not exist: {path}"
+
+      - name: readable
+        check: "os.access(path, os.R_OK)"
+        error_message: "Path is not readable: {path}"
+
+      - name: no_traversal
+        check: "'../' not in path and not path.startswith('/')"
+        error_message: "Path traversal detected: {path}"
+        severity: critical
+
+      - name: within_allowed_scope
+        check: "path.startswith(allowed_root)"
+        error_message: "Path outside allowed scope: {path}"
+
+  # Command validation
+  command:
+    enabled: true
+    blocked_patterns:
+      - pattern: "rm -rf"
+        error_message: "Destructive command blocked: rm -rf"
+        severity: critical
+
+      - pattern: "mkfs\\..*"
+        error_message: "Filesystem creation blocked"
+        severity: critical
+
+      - pattern: "format\\s+\\w+:"
+        error_message: "Drive format blocked"
+        severity: critical
+
+      - pattern: "dd\\s+if="
+        error_message: "Direct disk write blocked"
+        severity: critical
+
+    allow_patterns:
+      - "ls "
+      - "cat "
+      - "grep "
+      - "find "
+      - "python "
+      - "node "
+
+  # File validation
+  file:
+    enabled: true
+    rules:
+      - name: size_limit
+        check: "file_size <= 10000"
+        error_message: "File too large: {size} > 10000 characters"
+
+      - name: char_whitelist
+        check: "all(c in allowed_chars for c in content)"
+        allowed_chars: "a-zA-Z0-9_\\-./@:#"
+        error_message: "Invalid characters in file"
+
+      - name: json_valid
+        check: "is_valid_json(file)"
+        error_message: "Invalid JSON format"
+        when: "file_ext == '.json'"
+
+  # Redaction setup (pre-execution)
+  redaction:
+    enabled: true
+    patterns:
+      - api_keys: "API[_-]?KEY|apikey|api_key"
+      - passwords: "PASSWORD|password|passwd"
+      - tokens: "TOKEN|token|access_token"
+      - emails: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"
+      - ips: "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b"
+      - ssns: "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+      - cloud_aws: "AKIA[0-9A-Z]{16}"
+      - cloud_gcp: "\"type\": \"service_account\""
+      - cloud_azure: "[\"\\[]client_id[\"\\]]\\s*:\\s*[\"\\[]?[0-9a-f-]+"
+
+    redact_with: "[REDACTED_{type}]"
+
+# Validation scope configuration
+scope:
+  # Skill can specify which validations to apply
+  configurable: true
+
+  # Default validations applied to all skills
+  defaults:
+    - path.exists
+    - path.readable
+    - path.no_traversal
+    - command.blocked_patterns
+
+  # Validations that require explicit enable
+  opt_in:
+    - path.within_allowed_scope
+    - file.size_limit
+    - file.char_whitelist
+    - redaction.patterns
+
+# Error handling (fail-fast strategy)
+error_handling:
+  strategy: "fail_fast"
+  abort_on_critical: true
+  abort_on_validation_failure: true
+  log_all_failures: true
+  provide_error_details: true
+
+# Performance
+performance:
+  max_execution_time: "250ms"  # Validated target
+  parallel_validation: true
+  cache_validation_results: true
+
+# Examples
+examples:
+  basic:
+    description: "Basic input validation"
+    hooks:
+      pre:
+        - input-validation
+
+  custom_scope:
+    description: "Validation with specific scope"
+    hooks:
+      pre:
+        - name: input-validation
+          scope: [path.exists, path.readable, file.size_limit]
+
+  with_redaction:
+    description: "Validation with redaction setup"
+    hooks:
+      pre:
+        - name: input-validation
+          enable_redaction: true
+          patterns: [api_keys, passwords, tokens]
+
+  migration_scope:
+    description: "Validation for migration skills"
+    hooks:
+      pre:
+        - name: input-validation
+          scope: [source_root, migration_scope]
+          validate:
+            - path.exists
+            - path.readable
+            - path.no_traversal
+            - path.within_allowed_scope

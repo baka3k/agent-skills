@@ -1,0 +1,160 @@
+# Cleanup Handler Hook
+# Cache and temp file cleanup
+
+name: cleanup-handler
+type: post
+version: 1.0.0
+description: "Cache and temp file cleanup"
+category: cleanup
+
+# Execution configuration
+timeout: 60s
+on_failure: warn  # Cleanup failures should not affect skill results
+
+# Implementation details
+implementation:
+  type: skill
+  ref: "cleanup-handler"
+  integration: claude_code_settings
+
+# Cleanup configuration
+cleanup:
+  # Cache cleanup
+  cache:
+    enabled: true
+    path: ".claude/cache/"
+    max_age: "7d"
+    action: "delete"
+    keep_patterns:
+      - "*.json"
+      - "*.md"
+    dry_run: true  # Safety: dry-run by default
+    dry_run_message: "Would delete {count} files from cache"
+
+  # Temp files cleanup
+  temp_files:
+    enabled: true
+    path: "/tmp/agent-skills/"
+    max_age: "1d"
+    action: "delete"
+    keep_patterns:
+      - "*.parquet"
+      - "*.db"
+    dry_run: true
+    dry_run_message: "Would delete {count} temp files"
+
+  # Artifact cleanup
+  artifacts:
+    enabled: false  # Disabled by default, skill must enable
+    path: "artifacts/"
+    max_age: "30d"
+    action: "archive"
+    archive_path: "archives/"
+    compress: true
+    dry_run: true
+    dry_run_message: "Would archive {count} artifacts"
+
+# Safety configuration
+safety:
+  # Dry-run mode (validated decision)
+  dry_run: true
+  require_flag: "--no-dry-run"
+  require_confirmation: false  # No interactive confirmation
+
+  # Logging
+  log_all_actions: true
+  log_deleted_files: true
+  log_kept_files: true
+
+  # Protection
+  protect_patterns:
+    - "SKILL.md"
+    - "README.md"
+    - "LICENSE"
+    - "*.yaml"
+    - "*.yml"
+
+  # Verification
+  verify_paths_before_cleanup: true
+  abort_on_path_mismatch: false  # Warn but don't abort
+
+# Cleanup actions
+actions:
+  delete:
+    description: "Delete files matching criteria"
+    steps:
+      - "List files to delete"
+      - "Verify against keep_patterns"
+      - "Log deletion plan"
+      - "Delete files (if not dry_run)"
+      - "Log deleted files"
+
+  archive:
+    description: "Archive files before deletion"
+    steps:
+      - "Create archive directory"
+      - "Compress files"
+      - "Verify archive integrity"
+      - "Delete original files"
+      - "Log archive location"
+
+# Error handling
+error_handling:
+  strategy: "continue_on_error"
+  log_failures: true
+  abort_on_protected_file: false  # Warn but don't abort
+  notify_user: true
+
+# Performance
+performance:
+  max_execution_time: "60s"
+  parallel_cleanup: true
+  batch_size: 1000  # Files per batch
+
+# Output
+output:
+  format: structured
+  log:
+    - files_deleted: "count"
+    - files_kept: "count"
+    - space_freed: "bytes"
+    - dry_run: "boolean"
+    - cleanup_duration: "ms"
+
+# Examples
+examples:
+  basic:
+    description: "Basic cleanup with dry-run"
+    hooks:
+      post:
+        - cleanup-handler
+
+  custom_paths:
+    description: "Cleanup with custom paths"
+    hooks:
+      post:
+        - name: cleanup-handler
+          cache:
+            path: ".cache/"
+            max_age: "3d"
+
+  production:
+    description: "Production cleanup (no dry-run)"
+    hooks:
+      post:
+        - name: cleanup-handler
+          dry_run: false
+          flag: "--no-dry-run"
+
+  migration_artifacts:
+    description: "Cleanup migration artifacts"
+    hooks:
+      post:
+        - name: cleanup-handler
+          artifacts:
+            enabled: true
+            path: "migration-planning-data/"
+            keep_patterns:
+              - "*.json"
+              - "*.md"
+              - "worklist.json"

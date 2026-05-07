@@ -1,8 +1,32 @@
 ---
 name: bug-impact-analyzer
 description: Analyze bugs and evaluate their impact across the codebase by combining mind_mcp context knowledge with graph_mcp dependency tracing. Use when triaging bugs, assessing risk, planning fixes, or estimating regression scope.
-version: 2.0.0
-last_updated: 2025-04-16
+version: 2.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: mcp-health-check
+      timeout: 10s
+    - name: input-validation
+      scope: [bug_identifier, repository_root]
+      enable_redaction: true
+  phase:
+    phase_0_preflight:
+      post: [progress-reporter]
+    phase_1_mcp_context:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    phase_2_impact_analysis:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    phase_3_risk_assessment:
+      post: [progress-reporter]
+    phase_4_report:
+      post: [progress-reporter]
+  post:
+    - name: cleanup-handler
+      paths: [bug-analysis-data/]
+      keep: [*.json, *.md]
 ---
 
 # Bug Impact Analyzer

@@ -1,8 +1,27 @@
 ---
 name: module-summary-report
 description: Synthesize module-level findings into a concise architecture summary using mind_mcp knowledge evidence and graph_mcp semantic/call-graph evidence, highlighting responsibilities, stack, build flow, platform targets, and key risks. Use after repository and tech/build scans when stakeholders need a readable, decision-focused report.
-version: 2.0.0
-last_updated: 2025-04-16
+version: 2.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: mcp-health-check
+      timeout: 10s
+    - name: input-validation
+      scope: [module_inventories, findings]
+      enable_redaction: true
+  phase:
+    evidence_synthesis:
+      pre: [mcp-health-check]
+      post: [progress-reporter, evidence-validation]
+    summary_generation:
+      post: [progress-reporter]
+  post:
+    - name: output-redaction
+      apply_to: [architecture_summary, risk_assessment]
+    - name: cleanup-handler
+      paths: [summary-data/]
+      keep: [*.json, *.md]
 ---
 
 # Module Summary Report

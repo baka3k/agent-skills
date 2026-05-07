@@ -12,7 +12,7 @@ Select platform → confirm → done!
 
 ## What's Included
 
-### 15 Agent Skills
+### 20 Agent Skills
 
 | Skill | Description | Category |
 |-------|-------------|----------|
@@ -29,6 +29,11 @@ Select platform → confirm → done!
 | **module-summary-report** | Architecture & Module summary | Synthesis |
 | **reverse-doc-reconstruction** | Create Reverse Documentation from code | Documentation |
 | **legacy-cpp-porting-guardrails** | Port C++ code safely | Porting |
+| **cpp-java-migration-planner** | Dependency-aware module/file/function migration order planning for C++ to Java | Porting |
+| **cpp-java-pre-porting** | Pre-porting analysis and compat-layer design for C++ to Java migration | Porting |
+| **cpp-java-file-structure-porting** | 1:1 file skeleton migration from C++ to Java | Porting |
+| **cpp-java-function-porting** | 1:1 function conversion workflow from C++ to Java | Porting |
+| **cpp-java-porting-orchestrator** | End-to-end orchestration of staged C++ to Java migration | Orchestration |
 | **bug-impact-analyzer** | Bug Analysis & Impact Assessment | Bug Analysis |
 | **knows** | Unified Git + MCP + memory evidence retrieval | Analysis |
 
@@ -79,6 +84,11 @@ agent-skill/
 ├── module-summary-report/
 ├── reverse-doc-reconstruction/
 ├── legacy-cpp-porting-guardrails/
+├── cpp-java-migration-planner/
+├── cpp-java-pre-porting/
+├── cpp-java-file-structure-porting/
+├── cpp-java-function-porting/
+├── cpp-java-porting-orchestrator/
 ├── bug-impact-analyzer/
 │
 ├── template/                        # standard templates (28 files)

@@ -1,0 +1,98 @@
+# MCP Health Check Hook
+# Verify MCP availability before skill execution
+
+name: mcp-health-check
+type: pre
+version: 1.0.0
+description: "Verify MCP availability before skill execution"
+category: validation
+
+# Execution configuration
+timeout: 15s
+on_failure: abort  # Fail-fast strategy from validation
+
+# Implementation details
+implementation:
+  type: skill
+  ref: "mcp-health-check"
+  integration: claude_code_settings
+
+# Health checks to perform
+health_checks:
+  mind_mcp:
+    required: true
+    check:
+      - function_exists: "activate_project"
+      - function_exists: "context_knowledge"
+      - function_exists: "context_history"
+    on_failure:
+      action: abort
+      message: "mind_mcp not available or missing required functions"
+
+  graph_mcp:
+    required: true
+    check:
+      - function_exists: "activate_project"
+      - function_exists: "list_parsers"
+      - function_exists: "find_symbol"
+    on_failure:
+      action: abort
+      message: "graph_mcp not available or missing required functions"
+
+  parser_availability:
+    required: false  # Optional, depends on skill
+    check:
+      - parser_exists: "cpp"  # Example: C++ parser
+      - parser_exists: "python"
+    on_failure:
+      action: warn
+      message: "Required parser not available, some features may not work"
+
+# Validation requirements
+validation:
+  timeout: 10s
+  retry:
+    max_attempts: 2
+    backoff: "exponential"
+  on_all_failures:
+    action: abort
+    message: "MCP health check failed after {attempts} attempts"
+
+# Error handling (fail-fast strategy)
+error_handling:
+  strategy: "fail_fast"
+  abort_on_timeout: true
+  abort_on_unavailable: true
+  log_failures: true
+  notify_user: true
+
+# Output
+output:
+  format: structured
+  log:
+    - mcp_status: "available|unavailable|degraded"
+    - mind_mcp_functions: "count"
+    - graph_mcp_functions: "count"
+    - check_duration: "ms"
+
+# Examples
+examples:
+  basic:
+    description: "Basic MCP health check"
+    hooks:
+      pre:
+        - mcp-health-check
+
+  with_timeout:
+    description: "MCP health check with custom timeout"
+    hooks:
+      pre:
+        - name: mcp-health-check
+          timeout: 20s
+
+  optional:
+    description: "Optional MCP health check (warn only)"
+    hooks:
+      pre:
+        - name: mcp-health-check
+          on_failure: warn

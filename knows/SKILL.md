@@ -1,8 +1,19 @@
 ---
 name: knows
 description: Unified knowledge retrieval skill that answers with evidence by prioritizing git context, then mind_mcp/graph_mcp, then memory files (memory.md, agent.md, claude/cursor notes). Use when users ask why a change happened, what impacts a function/screen, or need traceable technical context before decisions.
-version: 1.0.0
-last_updated: 2026-04-26
+version: 1.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: input-validation
+      scope: [query_context, evidence_sources]
+      enable_redaction: true
+  post:
+    - name: output-redaction
+      apply_to: [evidence_log, answer]
+    - name: cleanup-handler
+      paths: [knowledge-cache/]
+      keep: [*.json, *.md]
 ---
 
 # Knows

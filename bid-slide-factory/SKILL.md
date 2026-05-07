@@ -1,8 +1,25 @@
 ---
 name: bid-slide-factory
 description: Build bidding presentation decks from proposal artifacts using the Presentations skill and Gemini image generation adapter with fallback behavior when API or model checks fail.
-version: 1.0.0
-last_updated: 2026-04-26
+version: 1.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: input-validation
+      scope: [proposal_artifacts, slide_config]
+      enable_redaction: true
+  phase:
+    slide_generation:
+      pre: [timeout-handler]
+      post: [progress-reporter]
+    image_generation:
+      post: [progress-reporter]
+  post:
+    - name: cleanup-handler
+      paths: [slide-output/, temp-images/]
+      keep: [*.pptx, *.pdf, final-deck.zip]
+    - name: metrics-report
+      include: [slide_count, generation_time, image_api_status]
 ---
 
 # Bid Slide Factory

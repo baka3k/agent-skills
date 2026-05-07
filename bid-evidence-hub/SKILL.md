@@ -1,8 +1,27 @@
 ---
 name: bid-evidence-hub
 description: Aggregate and normalize evidence for software bidding from mind_mcp, graph_mcp, and trusted internet sources, then emit confidence-ready evidence logs with citations.
-version: 1.0.0
-last_updated: 2026-04-26
+version: 1.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: mcp-health-check
+      timeout: 10s
+    - name: input-validation
+      scope: [bid_brief, evidence_config]
+      enable_redaction: true
+  phase:
+    evidence_collection:
+      pre: [mcp-health-check]
+      post: [progress-reporter, evidence-validation]
+    evidence_normalization:
+      post: [progress-reporter]
+  post:
+    - name: output-redaction
+      apply_to: [evidence_log, citations]
+    - name: cleanup-handler
+      paths: [evidence-data/]
+      keep: [*.json, *.md]
 ---
 
 # Bid Evidence Hub

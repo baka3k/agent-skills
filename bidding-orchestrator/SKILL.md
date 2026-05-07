@@ -1,8 +1,35 @@
 ---
 name: bidding-orchestrator
 description: Orchestrate end-to-end software project bidding packages in hybrid mode (fixed-price + T&M) by coordinating evidence retrieval, solution design, quality gates, estimation, staffing plans, and slide deck generation.
-version: 1.0.0
-last_updated: 2026-04-26
+version: 1.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: mcp-health-check
+      timeout: 10s
+    - name: input-validation
+      scope: [bid_brief, evidence_config]
+      enable_redaction: true
+    - name: skill-chain-verification
+      skills: [bid-evidence-hub, bid-solution-designer, bid-quality-gates, bid-estimator, bid-staffing-planner, bid-slide-factory]
+  phase:
+    evidence_aggregation:
+      post: [progress-reporter]
+    solution_design:
+      pre: [skill-availability-check]
+      post: [progress-reporter]
+    quality_gates:
+      post: [progress-reporter]
+    estimation:
+      post: [progress-reporter]
+    staffing:
+      post: [progress-reporter]
+    slide_generation:
+      post: [progress-reporter]
+  post:
+    - name: cleanup-handler
+      paths: [outputs/]
+      keep: [proposal/*.md, estimate/*.json, staffing/*.md, quality/*.md, evidence/*.json]
 ---
 
 # Bidding Orchestrator

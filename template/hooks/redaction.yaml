@@ -1,0 +1,296 @@
+# Redaction Hook
+# Centralized sensitive data redaction for all skills
+
+name: redaction
+type: pre
+version: 1.0.0
+description: "Centralized sensitive data redaction for all skills"
+category: validation
+
+# Execution configuration
+timeout: 5s
+on_failure: abort  # Abort if redaction setup fails
+
+# Implementation details
+implementation:
+  type: skill
+  ref: "redaction-engine"
+  integration: claude_code_settings
+
+# Redaction patterns
+patterns:
+  # API Keys and Tokens
+  api_keys:
+    - name: "AWS Access Key"
+      pattern: "AKIA[0-9A-Z]{16}"
+      redact_with: "[REDACTED_AWS_KEY]"
+      context: "aws"
+
+    - name: "Generic API Key"
+      pattern: "(?i)api[_-]?key['\"\\s]*[:=]['\"\\s]*[a-zA-Z0-9_\\-]+"
+      redact_with: "[REDACTED_API_KEY]"
+      context: "generic"
+
+    - name: "Bearer Token"
+      pattern: "(?i)bearer['\"\\s]+[a-zA-Z0-9_\\-\\.]+"
+      redact_with: "[REDACTED_BEARER_TOKEN]"
+      context: "auth"
+
+    - name: "GitHub Token"
+      pattern: "ghp_[a-zA-Z0-9]{36}"
+      redact_with: "[REDACTED_GITHUB_TOKEN]"
+      context: "github"
+
+    - name: "GitLab Token"
+      pattern: "glpat-[a-zA-Z0-9_\\-]{20}"
+      redact_with: "[REDACTED_GITLAB_TOKEN]"
+      context: "gitlab"
+
+  # Passwords and Secrets
+  passwords:
+    - name: "Password"
+      pattern: "(?i)password['\"\\s]*[:=]['\"\\s]*[^\\s'\"]{8,}"
+      redact_with: "[REDACTED_PASSWORD]"
+      context: "generic"
+
+    - name: "Passwd"
+      pattern: "(?i)passwd['\"\\s]*[:=]['\"\\s]*[^\\s'\"]{8,}"
+      redact_with: "[REDACTED_PASSWD]"
+      context: "unix"
+
+    - name: "Secret"
+      pattern: "(?i)secret['\"\\s]*[:=]['\"\\s]*[^\\s'\"]{10,}"
+      redact_with: "[REDACTED_SECRET]"
+      context: "generic"
+
+  # Database Connection Strings
+  database:
+    - name: "JDBC Connection String"
+      pattern: "jdbc:[^\\s'\"]{10,}"
+      redact_with: "[REDACTED_JDBC_URL]"
+      context: "database"
+
+    - name: "MongoDB Connection String"
+      pattern: "mongodb://[^\\s'\"]{10,}"
+      redact_with: "[REDACTED_MONGODB_URL]"
+      context: "database"
+
+    - name: "PostgreSQL Connection String"
+      pattern: "postgresql://[^\\s'\"]{10,}"
+      redact_with: "[REDACTED_POSTGRESQL_URL]"
+      context: "database"
+
+    - name: "MySQL Connection String"
+      pattern: "mysql://[^\\s'\"]{10,}"
+      redact_with: "[REDACTED_MYSQL_URL]"
+      context: "database"
+
+  # Email Addresses
+  emails:
+    - name: "Email Address"
+      pattern: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"
+      redact_with: "[REDACTED_EMAIL]"
+      context: "communication"
+      preserve_domain: false  # Full redaction for privacy
+
+    - name: "Email with Name"
+      pattern: "[A-Za-z0-9._%+-]+\\s+<\\s*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}>"
+      redact_with: "[REDACTED_EMAIL]"
+      context: "communication"
+
+  # IP Addresses
+  ips:
+    - name: "IPv4 Address"
+      pattern: "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b"
+      redact_with: "[REDACTED_IP]"
+      context: "network"
+
+    - name: "IPv6 Address"
+      pattern: "\\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\\b"
+      redact_with: "[REDACTED_IPV6]"
+      context: "network"
+
+    - name: "Localhost"
+      pattern: "\\b127\\.0\\.0\\.1\\b|\\blocalhost\\b"
+      redact_with: "[REDACTED_LOCALHOST]"
+      context: "network"
+
+  # Sensitive Personal Information
+  pii:
+    - name: "Social Security Number"
+      pattern: "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+      redact_with: "[REDACTED_SSN]"
+      context: "pii"
+
+    - name: "Credit Card Number"
+      pattern: "\\b\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}\\b"
+      redact_with: "[REDACTED_CC]"
+      context: "pii"
+
+    - name: "Phone Number"
+      pattern: "\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b"
+      redact_with: "[REDACTED_PHONE]"
+      context: "pii"
+
+  # Cloud Provider Credentials
+  cloud_aws:
+    - name: "AWS Secret Access Key"
+      pattern: "(?i)aws_secret_access_key['\"\\s]*[:=]['\"\\s]*[A-Za-z0-9/\\+]{40}"
+      redact_with: "[REDACTED_AWS_SECRET]"
+      context: "aws"
+
+    - name: "AWS Session Token"
+      pattern: "(?i)aws_session_token['\"\\s]*[:=]['\"\\s]*[A-Za-z0-9/\\+]{100,}"
+      redact_with: "[REDACTED_AWS_SESSION]"
+      context: "aws"
+
+  cloud_gcp:
+    - name: "GCP Service Account"
+      pattern: "(?i)\"type\"['\"\\s]*[:=]['\"\\s]*\"service_account\""
+      redact_with: "[REDACTED_GCP_SA]"
+      context: "gcp"
+
+    - name: "GCP API Key"
+      pattern: "AIza[A-Za-z0-9_\\-]{35}"
+      redact_with: "[REDACTED_GCP_KEY]"
+      context: "gcp"
+
+  cloud_azure:
+    - name: "Azure Client Secret"
+      pattern: "(?i)client_secret['\"\\s]*[:=]['\"\\s]*[A-Za-z0-9_\\-]{32,}"
+      redact_with: "[REDACTED_AZURE_SECRET]"
+      context: "azure"
+
+    - name: "Azure Tenant ID"
+      pattern: "(?i)tenant_id['\"\\s]*[:=]['\"\\s]*[0-9a-f-]{8,}-[0-9a-f-]{4,}-[0-9a-f-]{4,}-[0-9a-f-]{4,}-[0-9a-f-]{12,}"
+      redact_with: "[REDACTED_AZURE_TENANT]"
+      context: "azure"
+
+  # Certificate Keys
+  certificates:
+    - name: "Private Key"
+      pattern: "-----BEGIN ['\"]?(RSA|EC|OPENSSH|DSA|PRIVATE)?['\"]? PRIVATE KEY-----"
+      redact_with: "[REDACTED_PRIVATE_KEY]"
+      context: "crypto"
+      full_block_redaction: true
+
+    - name: "Certificate"
+      pattern: "-----BEGIN CERTIFICATE-----"
+      redact_with: "[REDACTED_CERTIFICATE]"
+      context: "crypto"
+      full_block_redaction: true
+
+# Redaction modes
+modes:
+  pre_execution:
+    # Apply redaction before skill execution
+    enabled: true
+    scan_inputs: true
+    scan_context: true
+
+  logging:
+    # Apply redaction to all logs
+    enabled: true
+    scan_log_messages: true
+    scan_error_messages: true
+
+  output:
+    # Apply redaction to skill output
+    enabled: true
+    scan_artifacts: true
+    scan_reports: true
+
+# Redaction scope configuration
+scope:
+  # Default redaction applied to all skills
+  defaults:
+    - api_keys
+    - passwords
+    - emails
+    - ips
+    - database
+    - cloud_aws
+    - cloud_gcp
+    - cloud_azure
+
+  # Skill-specific opt-in patterns
+  opt_in:
+    - pii  # PII only if explicitly needed
+    - certificates  # Certificates only if explicitly needed
+    - tokens  # Additional tokens only if explicitly needed
+
+# Redaction exceptions
+exceptions:
+  # Patterns that should NOT be redacted
+  allow_list:
+    - pattern: "localhost"
+      context: "development"
+      reason: "Local development"
+
+    - pattern: "127.0.0.1"
+      context: "development"
+      reason: "Local development"
+
+    - pattern: "test@"
+      context: "testing"
+      reason: "Test email addresses"
+
+# Performance
+performance:
+  max_execution_time: "250ms"
+  parallel_redaction: true
+  cache_patterns: true
+
+# Output
+output:
+  format: structured
+  log:
+    - redactions_count: "count"
+    - redactions_by_type: "count"
+    - scan_duration: "ms"
+
+# Examples
+examples:
+  basic:
+    description: "Basic redaction with default patterns"
+    hooks:
+      pre:
+        - redaction
+
+  custom_patterns:
+    description: "Redaction with custom patterns"
+    hooks:
+      pre:
+        - name: redaction
+          patterns: [api_keys, passwords, database]
+
+  pii_enabled:
+    description: "Redaction with PII patterns"
+    hooks:
+      pre:
+        - name: redaction
+          enable_pii: true
+
+  development_mode:
+    description: "Redaction with development exceptions"
+    hooks:
+      pre:
+        - name: redaction
+          mode: "development"
+          allow_localhost: true
+
+# Testing
+testing:
+  test_patterns:
+    - Test with sample API keys
+    - Test with sample passwords
+    - Test with sample emails
+    - Test with sample connection strings
+    - Verify redaction doesn't break functionality
+    - Verify sensitive data is fully redacted
+
+  validation:
+    - No false negatives (all sensitive data redacted)
+    - Minimal false positives (only sensitive data redacted)
+    - Performance <250ms for typical inputs
+    - Clear redaction markers

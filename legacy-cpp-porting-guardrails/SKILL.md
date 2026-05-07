@@ -1,8 +1,45 @@
 ---
 name: legacy-cpp-porting-guardrails
 description: Port and modernize very large legacy C/C++ classes or functions while preserving behavior with explicit guardrails, slice-by-slice migration, and parity tests. Use when files are thousands of lines, functions are hundreds to thousands of lines, logic is stateful or side-effect-heavy, and existing tests are weak or missing.
-version: 2.0.0
-last_updated: 2025-04-16
+version: 2.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: mcp-health-check
+      timeout: 15s
+      required: true
+    - name: input-validation
+      scope: [source_files, target_files]
+      enable_redaction: true
+  phase:
+    phase_0_preflight:
+      post: [progress-reporter]
+    phase_1_mcp_context:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    phase_2_graph_scope:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    phase_3_contract:
+      post: [progress-reporter]
+    phase_4_harness:
+      post: [progress-reporter]
+    phase_5_port_slices:
+      pre: [slice-validation]
+      post: [progress-reporter, parity-gate-check]
+    phase_6_parity_gates:
+      pre: [mcp-health-check]
+      post: [progress-reporter, parity-gate-check]
+    phase_7_refactor:
+      post: [progress-reporter]
+    all_phases:
+      post: [progress-reporter]
+  post:
+    - name: cleanup-handler
+      paths: [porting-data/, test-harnesses/]
+      keep: [*.json, *.md, *.py, parity-reports/*.md]
+    - name: parity-report-generation
+      include: [behavior_parity, test_coverage, slice_completion]
 ---
 
 # Legacy C++ Porting Guardrails

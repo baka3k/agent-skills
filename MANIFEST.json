@@ -138,6 +138,87 @@
       ]
     },
     {
+      "id": "cpp-java-file-structure-porting",
+      "name": "Cpp Java File Structure Porting",
+      "description": "Port a single C++ file into Java skeleton form with strict 1-to-1 mapping of package/path/file/class/function/parameter names, plus dependency-aware task breakdown and compatibility requirements with comprehensive security hardening, operational resilience, and evidence-based porting.",
+      "category": "porting",
+      "path": "cpp-java-file-structure-porting/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "cpp-java-function-porting",
+      "name": "Cpp Java Function Porting",
+      "description": "Port one C++ function to Java with strict 1-to-1 name preservation, dependency/impact analysis, compatibility-bridge planning, and function-level migration task artifacts with comprehensive security hardening, operational resilience, and evidence-based porting.",
+      "category": "porting",
+      "path": "cpp-java-function-porting/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "cpp-java-migration-planner",
+      "name": "Cpp Java Migration Planner",
+      "description": "Plan migration order for C++ to Java by computing dependency-aware module, file, and function waves; produce an executable worklist with cycle handling, risk scoring, and verification checkpoints with comprehensive security hardening, operational resilience, and evidence-based planning.",
+      "category": "porting",
+      "path": "cpp-java-migration-planner/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "cpp-java-porting-orchestrator",
+      "name": "Cpp Java Porting Orchestrator",
+      "description": "Orchestrate end-to-end C++ to Java migration by sequencing pre-porting, file-structure porting, function porting, and legacy guardrails with parity-focused checkpoints and migration deliverables with comprehensive security hardening, operational resilience, and evidence-based orchestration.",
+      "category": "orchestration",
+      "path": "cpp-java-porting-orchestrator/SKILL.md",
+      "dependencies": [
+        "cpp-java-migration-planner",
+        "cpp-java-pre-porting",
+        "cpp-java-file-structure-porting",
+        "cpp-java-function-porting",
+        "legacy-cpp-porting-guardrails"
+      ],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
+      "id": "cpp-java-pre-porting",
+      "name": "Cpp Java Pre Porting",
+      "description": "Prepare pre-porting analysis artifacts for C++ to Java migration, including compatibility gap inventory, compat-layer design, type mapping, migration roadmap, testing strategy, and risk mitigation outputs in pre-porting-data with comprehensive security hardening, operational resilience, and evidence-based planning.",
+      "category": "porting",
+      "path": "cpp-java-pre-porting/SKILL.md",
+      "dependencies": [],
+      "platforms": [
+        "claude-code",
+        "cursor",
+        "continue",
+        "copilot",
+        "codex"
+      ]
+    },
+    {
       "id": "deep-codebase-discovery",
       "name": "Deep Codebase Discovery",
       "description": "Orchestrate end-to-end deep codebase discovery by combining mind_mcp project knowledge retrieval, graph_mcp semantic and call-graph exploration, and structured synthesis across repo-recon, tech-build-audit, and module-summary-report skills. Use when you need a complete onboarding-quality technical assessment with module mapping, stack/build/platform analysis, critical flows, and prioritized risks.",
@@ -320,5 +401,15 @@
     "templates": "template/",
     "scripts": "scripts/",
     "skill_references": "*/references/"
+  },
+  "hooks_metadata": {
+    "registry_version": "1.0.0",
+    "mandatory_hooks": [
+      "input-validation"
+    ],
+    "mcp_hooks": [
+      "mcp-health-check"
+    ],
+    "validation_errors": null
   }
 }

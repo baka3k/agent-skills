@@ -1,8 +1,40 @@
 ---
 name: deep-codebase-discovery
 description: Orchestrate end-to-end deep codebase discovery by combining mind_mcp project knowledge retrieval, graph_mcp semantic and call-graph exploration, and structured synthesis across repo-recon, tech-build-audit, and module-summary-report skills. Use when you need a complete onboarding-quality technical assessment with module mapping, stack/build/platform analysis, critical flows, and prioritized risks.
-version: 2.0.0
-last_updated: 2025-04-16
+version: 2.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: mcp-health-check
+      timeout: 10s
+      required: true
+    - name: skill-chain-verification
+      skills: [repo-recon, tech-build-audit, module-summary-report]
+    - name: input-validation
+      scope: [repository_root, target_project]
+      enable_redaction: true
+  phase:
+    phase_0_preflight:
+      post: [progress-reporter]
+    phase_1_mcp_knowledge:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    phase_2_semantic_exploration:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    phase_3_synthesis:
+      pre: [mcp-health-check]
+      post: [progress-reporter, evidence-validation]
+    phase_4_bundle:
+      post: [progress-reporter]
+    all_phases:
+      post: [progress-reporter]
+  post:
+    - name: cleanup-handler
+      paths: [discovery-data/]
+      keep: [*.json, *.md, discovery-bundle.zip]
+    - name: metrics-aggregator
+      include: [timing, mcp_calls, modules_discovered, risks_identified]
 ---
 
 # Deep Codebase Discovery

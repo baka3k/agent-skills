@@ -1,0 +1,347 @@
+# Orchestrator Hooks
+# Specialized hooks for orchestrator skills that coordinate multiple skills
+
+name: orchestrator-hooks
+version: 1.0.0
+description: "Orchestrator-specific hooks for skill chain coordination"
+category: execution
+
+## Orchestrator Hook Templates
+
+### Skill Chain Verification Hook
+# Verify all dependent skills are available before orchestration
+name: skill-chain-verification
+type: pre
+version: 1.0.0
+description: "Verify skill chain availability before orchestration"
+category: validation
+
+timeout: 10s
+on_failure: abort  # Fail-fast if skill chain incomplete
+
+implementation:
+  type: skill
+  ref: "skill-chain-verifier"
+
+verification:
+  # Skills to verify (configurable per orchestrator)
+  required_skills:
+    - skill_id: "string"
+      required: true
+      check_exists: true
+      check_dependencies: true
+
+  # Verification steps
+  steps:
+    - name: check_skill_files
+      check: "SKILL.md exists in skill directory"
+      on_missing:
+        action: abort
+        message: "Required skill '{skill_id}' not found"
+
+    - name: check_skill_dependencies
+      check: "skill dependencies are available"
+      on_missing:
+        action: abort
+        message: "Skill '{skill_id}' dependency '{dep}' not available"
+
+    - name: validate_skill_versions
+      check: "skill versions are compatible"
+      on_incompatible:
+        action: warn
+        message: "Skill '{skill_id}' version {version} may have compatibility issues"
+
+# Orchestrator-specific patterns
+orchestrator_patterns:
+  bidding-orchestrator:
+    required_skills:
+      - bid-evidence-hub
+      - bid-solution-designer
+      - bid-quality-gates
+      - bid-estimator
+      - bid-staffing-planner
+      - bid-slide-factory
+
+  cpp-java-porting-orchestrator:
+    required_skills:
+      - cpp-java-migration-planner
+      - cpp-java-pre-porting
+      - cpp-java-file-structure-porting
+      - cpp-java-function-porting
+      - legacy-cpp-porting-guardrails
+
+  deep-codebase-discovery:
+    required_skills:
+      - repo-recon
+      - tech-build-audit
+      - module-summary-report
+
+# Examples
+examples:
+  basic:
+    description: "Skill chain verification for bidding orchestrator"
+    hooks:
+      pre:
+        - name: skill-chain-verification
+          skills: [bid-evidence-hub, bid-solution-designer, bid-estimator]
+
+  with_versions:
+    description: "Skill chain verification with version checks"
+    hooks:
+      pre:
+        - name: skill-chain-verification
+          validate_versions: true
+
+---
+
+### Evidence Validation Hook
+# Validate evidence quality before proceeding with workflow
+name: evidence-validation
+type: phase
+version: 1.0.0
+description: "Validate evidence quality and completeness"
+category: validation
+
+timeout: 15s
+on_failure: abort  # Abort if evidence quality insufficient
+
+implementation:
+  type: skill
+  ref: "evidence-validator"
+
+validation:
+  quality_gates:
+    - name: evidence_completeness
+      check: "minimum evidence requirements met"
+      threshold: 0.7  # 70% of required evidence must be present
+      on_below_threshold:
+        action: abort
+        message: "Insufficient evidence: {completeness}% < 70% required"
+
+    - name: evidence_citations
+      check: "all evidence has proper citations"
+      required: true
+      on_missing_citations:
+        action: warn
+        message: "Some evidence lacks proper citations"
+
+    - name: evidence_recency
+      check: "evidence is recent enough"
+      max_age: "90 days"  # Evidence older than 90 days flagged
+      on_stale:
+        action: warn
+        message: "Some evidence is older than 90 days"
+
+  evidence_types:
+    - mcp_evidence:
+        sources: [mind_mcp, graph_mcp]
+        validate: true
+    - web_evidence:
+        sources: [trusted_web_sources]
+        validate: true
+    - internal_docs:
+        sources: [project_docs]
+        validate: false  # Optional
+
+# Examples
+examples:
+  bidding:
+    description: "Evidence validation for bidding orchestrator"
+    hooks:
+      phase:
+        evidence_aggregation:
+          post: [evidence-validation]
+
+  custom_threshold:
+    description: "Evidence validation with custom threshold"
+    hooks:
+      phase:
+        evidence_aggregation:
+          post:
+            - name: evidence-validation
+              threshold: 0.8  # 80% completeness required
+
+---
+
+### Solution Completeness Check Hook
+# Verify solution design completeness before estimation
+name: solution-completeness-check
+type: phase
+version: 1.0.0
+description: "Verify solution design completeness"
+category: validation
+
+timeout: 10s
+on_failure: abort
+
+implementation:
+  type: skill
+  ref: "solution-validator"
+
+validation:
+  required_sections:
+    - architecture_overview
+    - technical_approach
+    - risk_assessment
+    - success_criteria
+
+  completeness_checks:
+    - name: architecture_defined
+      check: "architecture is clearly defined"
+      required: true
+    - name: approach_specified
+      check: "technical approach is specified"
+      required: true
+    - name: risks_identified
+      check: "risks are identified and mitigated"
+      required: true
+    - name: success_criteria_defined
+      check: "success criteria are defined"
+      required: true
+
+# Examples
+examples:
+  bidding:
+    description: "Solution completeness check for bidding"
+    hooks:
+      phase:
+        solution_design:
+          post: [solution-completeness-check]
+
+---
+
+### Estimate Validation Hook
+# Validate estimates before staffing planning
+name: estimate-validation
+type: phase
+version: 1.0.0
+description: "Validate estimate quality and consistency"
+category: validation
+
+timeout: 10s
+on_failure: abort
+
+implementation:
+  type: skill
+  ref: "estimate-validator"
+
+validation:
+  consistency_checks:
+    - name: range_validity
+      check: "best <= base <= worst"
+      required: true
+    - name: reasonable_variance
+      check: "variance within acceptable limits"
+      max_variance: 0.5  # 50% variance max
+    - name: wbs_completeness
+      check: "WBS covers all requirements"
+      threshold: 0.9  # 90% coverage
+
+# Examples
+examples:
+  bidding:
+    description: "Estimate validation for bidding"
+    hooks:
+      phase:
+        estimation:
+          post: [estimate-validation]
+
+---
+
+### Staffing Ratio Check Hook
+# Validate staffing plan ratios
+name: staffing-ratio-check
+type: phase
+version: 1.0.0
+description: "Validate staffing plan ratios and distribution"
+category: validation
+
+timeout: 5s
+on_failure: warn  # Warn only, don't abort
+
+implementation:
+  type: skill
+  ref: "staffing-validator"
+
+validation:
+  ratio_checks:
+    - name: phase_distribution
+      check: "staffing distributed appropriately across phases"
+      default_ratios:
+        discovery: 0.10  # 10%
+        foundation: 0.20  # 20%
+        build: 0.50  # 50%
+        stabilize: 0.15  # 15%
+        go_live: 0.05  # 5%
+      tolerance: 0.10  # 10% tolerance
+
+    - name: role_balance
+      check: "appropriate mix of roles"
+      min_senior_ratio: 0.3  # At least 30% senior
+      max_junior_ratio: 0.4  # At most 40% junior
+
+# Examples
+examples:
+  bidding:
+    description: "Staffing ratio check for bidding"
+    hooks:
+      phase:
+        staffing:
+          post: [staffing-ratio-check]
+
+---
+
+### Bid Package Cleanup Hook
+# Cleanup and organize bid package artifacts
+name: bid-package-cleanup
+type: post
+version: 1.0.0
+description: "Cleanup and organize bid package artifacts"
+category: cleanup
+
+timeout: 30s
+on_failure: warn
+
+implementation:
+  type: skill
+  ref: "bid-package-cleaner"
+
+cleanup:
+  # Keep final bid package
+  keep:
+    - "final-bid-package.zip"
+    - "proposal/proposal.md"
+    - "estimate/estimate_summary.json"
+    - "staffing/staffing_plan.md"
+    - "quality/quality_gates.md"
+
+  # Remove intermediate artifacts
+  remove:
+    - "temp/"
+    - ".cache/"
+    - "*.tmp"
+    - "*_draft.*"
+
+  # Archive source data
+  archive:
+    - "evidence/raw/"
+    - "intermediate/"
+
+  safety:
+    dry_run: true  # Dry-run by default
+    log_all_actions: true
+
+# Examples
+examples:
+  bidding:
+    description: "Bid package cleanup"
+    hooks:
+      post:
+        - bid-package-cleanup
+
+  production:
+    description: "Bid package cleanup (production mode)"
+    hooks:
+      post:
+        - name: bid-package-cleanup
+          dry_run: false

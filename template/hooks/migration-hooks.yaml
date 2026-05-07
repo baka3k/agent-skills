@@ -1,0 +1,422 @@
+# Migration Hooks
+# Specialized hooks for migration and porting skills
+
+name: migration-hooks
+version: 1.0.0
+description: "Migration-specific hooks for C++ to Java porting and other migrations"
+category: execution
+
+## Migration Hook Templates
+
+### Migration Scope Validation Hook
+# Validate migration scope and target paths
+name: migration-scope-validation
+type: pre
+version: 1.0.0
+description: "Validate migration scope and target paths"
+category: validation
+
+timeout: 15s
+on_failure: abort  # Abort if scope validation fails
+
+implementation:
+  type: skill
+  ref: "migration-scope-validator"
+
+validation:
+  scope_checks:
+    - name: source_root_exists
+      check: "source_root directory exists"
+      required: true
+      on_failure:
+        action: abort
+        message: "Source root does not exist: {source_root}"
+
+    - name: source_root_readable
+      check: "source_root is readable"
+      required: true
+      on_failure:
+        action: abort
+        message: "Source root is not readable: {source_root}"
+
+    - name: target_writable
+      check: "target directory is writable"
+      required: true
+      on_failure:
+        action: abort
+        message: "Target directory is not writable: {target_root}"
+
+    - name: scope_within_bounds
+      check: "migration scope is within source_root"
+      required: true
+      on_failure:
+        action: abort
+        message: "Migration scope outside source_root"
+
+    - name: no_path_traversal
+      check: "no path traversal attempts in scope"
+      required: true
+      on_failure:
+        action: abort
+        message: "Path traversal detected in migration scope"
+
+  migration_type_validation:
+    cpp_to_java:
+      - cpp_files_exist: true
+      - target_package_valid: true
+      - dependency_mapping_exists: true
+
+# Examples
+examples:
+  basic:
+    description: "Migration scope validation"
+    hooks:
+      pre:
+        - migration-scope-validation
+
+  cpp_to_java:
+    description: "C++ to Java migration scope validation"
+    hooks:
+      pre:
+        - name: migration-scope-validation
+          migration_type: cpp_to_java
+          validate_target_package: true
+
+---
+
+### Dependency Graph Check Hook
+# Verify dependency graph is available and valid
+name: dependency-graph-check
+type: phase
+version: 1.0.0
+description: "Verify dependency graph availability and validity"
+category: validation
+
+timeout: 30s
+on_failure: abort  # Abort if dependency graph unavailable
+
+implementation:
+  type: skill
+  ref: "dependency-graph-validator"
+
+validation:
+  graph_availability:
+    - name: mcp_graph_available
+      check: "graph_mcp is available and has dependency data"
+      required: true
+      fallback:
+        action: abort
+        message: "Graph MCP unavailable, cannot proceed with dependency planning"
+
+    - name: parser_available
+      check: "appropriate parser is available"
+      required: true
+      parsers:
+        cpp: "cpp"
+        java: "java"
+      on_missing:
+        action: abort
+        message: "Required parser '{parser}' not available"
+
+  graph_validity:
+    - name: graph_has_nodes
+      check: "dependency graph has nodes"
+      min_nodes: 1
+      on_empty:
+        action: abort
+        message: "Dependency graph is empty"
+
+    - name: graph_has_edges
+      check: "dependency graph has edges"
+      min_edges: 0  # Can be 0 for single-file projects
+      on_empty:
+        action: warn
+        message: "Dependency graph has no edges (single file project)"
+
+  fallback:
+    on_mcp_unavailable:
+      action: abort
+      message: "Graph MCP unavailable, cannot create migration plan"
+      reason: "Migration planning requires accurate dependency data"
+
+# Examples
+examples:
+  migration_planning:
+    description: "Dependency graph check before migration planning"
+    hooks:
+      phase:
+        phase_2_dependency_graph:
+          pre: [dependency-graph-check]
+          on_timeout: abort
+
+  with_timeout:
+    description: "Dependency graph check with custom timeout"
+    hooks:
+      phase:
+        phase_2_dependency_graph:
+          pre:
+            - name: dependency-graph-check
+              timeout: 45s
+
+---
+
+### Worklist Validation Hook
+# Validate generated migration worklist
+name: worklist-validation
+type: phase
+version: 1.0.0
+description: "Validate migration worklist completeness and correctness"
+category: validation
+
+timeout: 20s
+on_failure: abort  # Abort if worklist validation fails
+
+implementation:
+  type: skill
+  ref: "worklist-validator"
+
+validation:
+  worklist_completeness:
+    - name: all_modules_included
+      check: "all modules in scope are included in worklist"
+      required: true
+      on_missing:
+        action: abort
+        message: "Some modules missing from worklist"
+
+    - name: dependency_order_valid
+      check: "worklist respects dependency order"
+      required: true
+      on_violation:
+        action: abort
+        message: "Worklist violates dependency order"
+
+    - name: no_duplicates
+      check: "no duplicate entries in worklist"
+      required: true
+      on_duplicates:
+        action: abort
+        message: "Duplicate entries found in worklist"
+
+  wave_validation:
+    - name: waves_sequential
+      check: "waves are properly sequenced"
+      required: true
+    - name: wave_dependencies_satisfied
+      check: "each wave's dependencies are in previous waves"
+      required: true
+
+  risk_validation:
+    - name: high_risk_items_flagged
+      check: "high-risk items have appropriate mitigation"
+      required: true
+    - name: blockers_identified
+      check: "blocking dependencies are identified"
+      required: true
+
+# Examples
+examples:
+  migration_planning:
+    description: "Worklist validation after generation"
+    hooks:
+      phase:
+        phase_5_worklist:
+          post: [worklist-validation]
+
+---
+
+### Parity Gate Check Hook
+# Verify parity gates pass before proceeding
+name: parity-gate-check
+type: phase
+version: 1.0.0
+description: "Verify parity gates pass before continuing"
+category: validation
+
+timeout: 30s
+on_failure: abort  # Abort if parity gates fail
+
+implementation:
+  type: skill
+  ref: "parity-gate-validator"
+
+validation:
+  parity_gates:
+    - name: build_parity
+      check: "target code builds successfully"
+      required: true
+      on_failure:
+        action: abort
+        message: "Build parity failed: target code does not build"
+
+    - name: test_parity
+      check: "tests pass at same rate as source"
+      threshold: 0.95  # 95% pass rate required
+      on_failure:
+        action: abort
+        message: "Test parity failed: pass rate {rate}% < 95% required"
+
+    - name: functional_parity
+      check: "key functions produce same output"
+      required: true
+      sample_size: 10  # Test 10 key functions
+      on_failure:
+        action: abort
+        message: "Functional parity failed: key functions produce different output"
+
+  gate_tolerance:
+    allow_minor_drift: true
+    minor_drift_threshold: 0.05  # 5% drift acceptable
+    require_documentation: true  # Drift must be documented
+
+# Examples
+examples:
+  porting:
+    description: "Parity gate check during porting"
+    hooks:
+      phase:
+        porting_phase:
+          post: [parity-gate-check]
+
+  custom_threshold:
+    description: "Parity gate check with custom threshold"
+    hooks:
+      phase:
+        porting_phase:
+          post:
+            - name: parity-gate-check
+              threshold: 0.98  # 98% required
+
+---
+
+### Migration Artifact Cleanup Hook
+# Cleanup migration artifacts and temporary files
+name: migration-artifact-cleanup
+type: post
+version: 1.0.0
+description: "Cleanup migration artifacts and temporary files"
+category: cleanup
+
+timeout: 60s
+on_failure: warn  # Warn only, don't abort
+
+implementation:
+  type: skill
+  ref: "migration-artifact-cleaner"
+
+cleanup:
+  # Keep important migration artifacts
+  keep:
+    - "migration-planning-data/*.json"
+    - "migration-planning-data/*.md"
+    - "migration-planning-data/worklist.json"
+    - "porting-data/*.parquet"
+    - "parity-reports/*.md"
+    - "test-harnesses/*.py"
+
+  # Remove temporary files
+  remove:
+    - "*.tmp"
+    - "*_draft.*"
+    - ".cache/"
+    - "temp/"
+
+  # Archive intermediate artifacts
+  archive:
+    - "intermediate-artifacts/"
+    - "dependency-snapshots/"
+
+  safety:
+    dry_run: true  # Dry-run by default
+    log_all_actions: true
+    require_confirmation: false  # No interactive confirmation
+
+# Examples
+examples:
+  migration:
+    description: "Migration artifact cleanup"
+    hooks:
+      post:
+        - migration-artifact-cleanup
+
+  production:
+    description: "Migration artifact cleanup (production mode)"
+    hooks:
+      post:
+        - name: migration-artifact-cleanup
+          dry_run: false
+
+---
+
+### Slice Validation Hook
+# Validate slice boundaries and scope
+name: slice-validation
+type: phase
+version: 1.0.0
+description: "Validate slice boundaries and scope for incremental porting"
+category: validation
+
+timeout: 15s
+on_failure: abort  # Abort if slice validation fails
+
+implementation:
+  type: skill
+  ref: "slice-validator"
+
+validation:
+  scope_validation:
+    - name: slice_within_module
+      check: "slice is within module boundaries"
+      required: true
+      on_failure:
+        action: abort
+        message: "Slice exceeds module boundaries"
+
+    - name: slice_dependencies_known
+      check: "slice dependencies are identified"
+      required: true
+      on_failure:
+        action: abort
+        message: "Slice has unknown dependencies"
+
+    - name: slice_size_reasonable
+      check: "slice size is reasonable for porting"
+      max_functions: 100  # Max 100 functions per slice
+      max_lines: 5000  # Max 5000 lines per slice
+      on_too_large:
+        action: warn
+        message: "Slice size exceeds recommendation ({size} functions, {lines} lines)"
+
+  incremental_validity:
+    - name: no_overlap_with_previous
+      check: "slice does not overlap with already ported code"
+      required: true
+      on_overlap:
+        action: abort
+        message: "Slice overlaps with already ported code"
+
+    - name: respects_slice_order
+      check: "slice respects porting order from worklist"
+      required: true
+      on_violation:
+        action: abort
+        message: "Slice violates porting order"
+
+# Examples
+examples:
+  porting:
+    description: "Slice validation before porting"
+    hooks:
+      phase:
+        porting_phase:
+          pre: [slice-validation]
+
+  custom_limits:
+    description: "Slice validation with custom size limits"
+    hooks:
+      phase:
+        porting_phase:
+          pre:
+            - name: slice-validation
+              max_functions: 50
+              max_lines: 2500

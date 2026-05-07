@@ -1,0 +1,362 @@
+# Agent Skills Hook Registry
+# Central registry for all reusable hook patterns in agent-skills-kit
+
+version: 1.0.0
+last_updated: 2026-05-05
+
+# Hook registry metadata
+registry:
+  name: "Agent Skills Hook Registry"
+  description: "Centralized hook patterns for agent skills"
+  schema_version: "1.0"
+
+# Hook template schema
+# All hooks must follow this schema
+hook_schema:
+  required_fields:
+    - name
+    - type
+    - description
+    - implementation
+
+  optional_fields:
+    - timeout
+    - on_failure
+    - safety
+    - version
+
+  field_types:
+    name: string
+    type: enum [pre, post, phase, background]
+    description: string
+    timeout: duration (e.g., "10s", "250ms")
+    on_failure: enum [abort, fallback, warn, continue]
+    implementation: object
+    safety: object
+
+# Hook categories
+categories:
+  validation:
+    description: "Input validation and sanitization hooks"
+    hooks:
+      - input-validation
+      - mcp-health-check
+      - migration-scope-validation
+      - dependency-graph-check
+      - worklist-validation
+      - parity-gate-check
+      - slice-validation
+      - skill-chain-verification
+      - evidence-validation
+      - solution-completeness-check
+      - estimate-validation
+      - staffing-ratio-check
+      - redaction
+
+  execution:
+    description: "Pre and post execution hooks"
+    hooks:
+      - progress-reporter
+      - timeout-handler
+
+  error_handling:
+    description: "Error recovery and failure handling hooks"
+    hooks:
+      - error-recovery
+      - timeout-handler
+
+  cleanup:
+    description: "Resource cleanup and management hooks"
+    hooks:
+      - cleanup-handler
+      - cleanup-automation
+      - bid-package-cleanup
+      - migration-artifact-cleanup
+
+  monitoring:
+    description: "Observability and metrics hooks"
+    hooks:
+      - metrics-aggregator
+      - health-monitor
+
+# Available hooks
+hooks:
+  # Core hooks (Phase 1)
+  - name: mcp-health-check
+    category: validation
+    type: pre
+    file: mcp-health-check.yaml
+    version: 1.0.0
+    description: "Verify MCP availability before skill execution"
+    timeout: 15s
+    on_failure: abort
+
+  - name: input-validation
+    category: validation
+    type: pre
+    file: input-validation.yaml
+    version: 1.0.0
+    description: "Centralized input validation for all skills"
+    timeout: 5s
+    on_failure: abort
+
+  - name: cleanup-handler
+    category: cleanup
+    type: post
+    file: cleanup-handler.yaml
+    version: 1.0.0
+    description: "Cache and temp file cleanup"
+    timeout: 60s
+    on_failure: warn
+
+  - name: progress-reporter
+    category: execution
+    type: phase
+    file: progress-reporter.yaml
+    version: 1.0.0
+    description: "Progress tracking for long-running workflows"
+    timeout: 2s
+    on_failure: warn
+
+  # Additional hooks (Phase 3 & 4)
+  - name: error-recovery
+    category: error_handling
+    type: phase
+    file: error-recovery.yaml
+    version: 1.0.0
+    description: "Fail-fast error handling"
+    timeout: 10s
+    on_failure: abort
+
+  - name: metrics-aggregator
+    category: monitoring
+    type: post
+    file: metrics-aggregator.yaml
+    version: 1.0.0
+    description: "Aggregate metrics from skill execution"
+    timeout: 5s
+    on_failure: warn
+
+  - name: health-monitor
+    category: monitoring
+    type: background
+    file: health-monitor.yaml
+    version: 1.0.0
+    description: "Monitor health of MCP and resources"
+    timeout: 10s
+    on_failure: warn
+
+  - name: cleanup-automation
+    category: cleanup
+    type: post
+    file: cleanup-automation.yaml
+    version: 1.0.0
+    description: "Automated cleanup with dry-run safety"
+    timeout: 60s
+    on_failure: warn
+    safety:
+      dry_run: true
+
+# Orchestrator hooks
+  - name: skill-chain-verification
+    category: validation
+    type: pre
+    file: orchestrator-hooks.yaml
+    version: 1.0.0
+    description: "Verify skill chain availability before orchestration"
+    timeout: 10s
+    on_failure: abort
+
+  - name: evidence-validation
+    category: validation
+    type: phase
+    file: orchestrator-hooks.yaml
+    version: 1.0.0
+    description: "Validate evidence quality and completeness"
+    timeout: 15s
+    on_failure: abort
+
+  - name: solution-completeness-check
+    category: validation
+    type: phase
+    file: orchestrator-hooks.yaml
+    version: 1.0.0
+    description: "Verify solution design completeness"
+    timeout: 10s
+    on_failure: abort
+
+  - name: estimate-validation
+    category: validation
+    type: phase
+    file: orchestrator-hooks.yaml
+    version: 1.0.0
+    description: "Validate estimate quality and consistency"
+    timeout: 10s
+    on_failure: abort
+
+  - name: staffing-ratio-check
+    category: validation
+    type: phase
+    file: orchestrator-hooks.yaml
+    version: 1.0.0
+    description: "Validate staffing plan ratios and distribution"
+    timeout: 5s
+    on_failure: warn
+
+  - name: bid-package-cleanup
+    category: cleanup
+    type: post
+    file: orchestrator-hooks.yaml
+    version: 1.0.0
+    description: "Cleanup and organize bid package artifacts"
+    timeout: 30s
+    on_failure: warn
+    safety:
+      dry_run: true
+
+# Migration hooks
+  - name: migration-scope-validation
+    category: validation
+    type: pre
+    file: migration-hooks.yaml
+    version: 1.0.0
+    description: "Validate migration scope and target paths"
+    timeout: 15s
+    on_failure: abort
+
+  - name: dependency-graph-check
+    category: validation
+    type: phase
+    file: migration-hooks.yaml
+    version: 1.0.0
+    description: "Verify dependency graph availability and validity"
+    timeout: 30s
+    on_failure: abort
+
+  - name: worklist-validation
+    category: validation
+    type: phase
+    file: migration-hooks.yaml
+    version: 1.0.0
+    description: "Validate migration worklist completeness and correctness"
+    timeout: 20s
+    on_failure: abort
+
+  - name: parity-gate-check
+    category: validation
+    type: phase
+    file: migration-hooks.yaml
+    version: 1.0.0
+    description: "Verify parity gates pass before continuing"
+    timeout: 30s
+    on_failure: abort
+
+  - name: migration-artifact-cleanup
+    category: cleanup
+    type: post
+    file: migration-hooks.yaml
+    version: 1.0.0
+    description: "Cleanup migration artifacts and temporary files"
+    timeout: 60s
+    on_failure: warn
+    safety:
+      dry_run: true
+
+  - name: slice-validation
+    category: validation
+    type: phase
+    file: migration-hooks.yaml
+    version: 1.0.0
+    description: "Validate slice boundaries and scope for incremental porting"
+    timeout: 15s
+    on_failure: abort
+
+# Error handling and timeout hooks (Phase 3)
+  - name: error-recovery
+    category: error_handling
+    type: phase
+    file: error-recovery.yaml
+    version: 1.0.0
+    description: "Handle errors with fail-fast strategy"
+    timeout: 10s
+    on_failure: abort
+
+  - name: timeout-handler
+    category: error_handling
+    type: phase
+    file: timeout-handler.yaml
+    version: 1.0.0
+    description: "Phase-level timeout validation and reporting"
+    timeout: 5s
+    on_failure: abort
+
+  - name: redaction
+    category: validation
+    type: pre
+    file: redaction.yaml
+    version: 1.0.0
+    description: "Centralized sensitive data redaction for all skills"
+    timeout: 5s
+    on_failure: abort
+
+# Hook type definitions
+hook_types:
+  pre:
+    description: "Execute before skill execution"
+    execution_order: "sequential"
+    on_failure: "blocks skill execution"
+
+  post:
+    description: "Execute after skill completion"
+    execution_order: "reverse sequential"
+    on_failure: "logged but does not affect skill result"
+
+  phase:
+    description: "Execute at specific workflow phases"
+    execution_order: "as defined in skill"
+    on_failure: "abort based on fail-fast strategy"
+
+  background:
+    description: "Execute continuously during skill execution"
+    execution_order: "parallel"
+    on_failure: "logged and notified"
+
+# Integration points
+integration:
+  claude_code:
+    method: "settings.json hooks"
+    config_file: "~/.claude/settings.json"
+    hook_section: "hooks"
+
+  skill_declaration:
+    location: "SKILL.md frontmatter"
+    format: "YAML"
+    required: true  # Mandatory hooks for all skills
+
+# Migration notes
+migration:
+  breaking_changes:
+    - "Hooks are now mandatory for all skills"
+    - "Custom hook_executor.py removed - use Claude Code hooks"
+    - "Error handling changed to fail-fast (abort on errors)"
+    - "Performance target updated to 250ms"
+
+  compatibility:
+    - "All existing skills must add hook declarations"
+    - "See MIGRATION_GUIDE.md for details"
+
+# Safety defaults
+safety_defaults:
+  cleanup:
+    dry_run: true
+    require_confirmation: false
+    log_all_actions: true
+
+  error_handling:
+    strategy: "fail_fast"
+    abort_on_validation_failure: true
+    abort_on_mcp_failure: true
+
+  performance:
+    max_hook_timeout: "250ms"
+    warn_on_slow_hooks: true

@@ -146,8 +146,25 @@ class EnhancedAgentSkillsInstaller:
             return False
         template_dst = dst_root / "template"
         shutil.copytree(self.template_source, template_dst, dirs_exist_ok=True)
+
+        # Count templates and hooks
         template_count = len(list(template_dst.rglob("*.md")))
+        hooks_dir = template_dst / "hooks"
+        hook_count = 0
+        if hooks_dir.exists() and hooks_dir.is_dir():
+            hook_count = len(list(hooks_dir.rglob("*.yaml")))
+
         print(f"  Copied {template_count} template files to {template_dst}")
+        if hook_count > 0:
+            print(f"  ✓ Copied {hook_count} hook files to {hooks_dir}")
+
+        # Verify hooks registry exists
+        registry_file = hooks_dir / "registry.yaml"
+        if not registry_file.exists():
+            print(f"  ⚠ Warning: Hooks registry not found at {registry_file}")
+        else:
+            print(f"  ✓ Hooks registry found")
+
         return True
 
     def _prune_pycache(self, root: Path) -> None:
@@ -282,6 +299,24 @@ class EnhancedAgentSkillsInstaller:
         print(f"\n{'='*60}")
         print("Post-Installation Instructions")
         print(f"{'='*60}")
+
+        # Verify hooks installation
+        if self.include_templates:
+            install_path = self.get_install_path()
+            hooks_dir = install_path / "template" / "hooks"
+            if hooks_dir.exists():
+                hook_files = list(hooks_dir.glob("*.yaml"))
+                if hook_files:
+                    print(f"\n✓ Hooks installed: {len(hook_files)} hook files")
+                    print(f"  Location: {hooks_dir}")
+                    if (hooks_dir / "registry.yaml").exists():
+                        print(f"  ✓ Hooks registry: registry.yaml")
+                    if (hooks_dir / "MIGRATION_GUIDE.md").exists():
+                        print(f"  ✓ Migration guide: MIGRATION_GUIDE.md")
+                else:
+                    print(f"\n⚠ Warning: No hooks found in {hooks_dir}")
+            else:
+                print(f"\n⚠ Warning: Hooks directory not found at {hooks_dir}")
 
         if self.agent == "copilot":
             print(

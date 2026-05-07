@@ -1,8 +1,40 @@
 ---
 name: reverse-doc-reconstruction
 description: Reconstruct technical documentation from source code by tracing entry points, call flows, IPC links, and domain entities, then produce requirements/use case/detail design artifacts aligned with the project templates. Use when reverse engineering legacy repositories, rebuilding missing specs, or preparing migration-ready docs from implementation-first systems.
-version: 2.0.0
-last_updated: 2025-04-16
+version: 2.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: mcp-health-check
+      timeout: 10s
+    - name: input-validation
+      scope: [source_root, documentation_scope]
+      enable_redaction: true
+  phase:
+    bootstrap:
+      post: [progress-reporter]
+    business_context:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    coverage_baseline:
+      post: [progress-reporter]
+    tracing:
+      pre: [mcp-health-check]
+      post: [progress-reporter, timeout-handler]
+    use_case_generation:
+      post: [progress-reporter]
+    detail_design:
+      post: [progress-reporter]
+    quality_gates:
+      post: [progress-reporter]
+    all_phases:
+      post: [progress-reporter]
+  post:
+    - name: output-redaction
+      apply_to: [requirements, use_cases, detail_design]
+    - name: cleanup-handler
+      paths: [doc-reconstruction-data/]
+      keep: [*.json, *.md, *.pptx]
 ---
 
 # Reverse Doc Reconstruction

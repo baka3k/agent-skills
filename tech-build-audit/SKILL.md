@@ -1,8 +1,32 @@
 ---
 name: tech-build-audit
 description: Detect core technologies, build systems, CI/CD pipelines, deployment targets, and platform assumptions by combining mind_mcp project knowledge with graph_mcp semantic code evidence. Use when documenting an unknown project stack, preparing migrations, validating onboarding docs, or estimating build and runtime risks.
-version: 2.0.0
-last_updated: 2025-04-16
+version: 2.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: mcp-health-check
+      timeout: 10s
+    - name: input-validation
+      scope: [repository_root]
+      enable_redaction: true
+  phase:
+    knowledge_retrieval:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    build_surface_analysis:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    filesystem_audit:
+      post: [progress-reporter]
+    platform_classification:
+      post: [progress-reporter]
+  post:
+    - name: output-redaction
+      apply_to: [build_report, tech_stack, platform_targets]
+    - name: cleanup-handler
+      paths: [audit-data/]
+      keep: [*.json, *.md]
 ---
 
 # Tech Build Audit

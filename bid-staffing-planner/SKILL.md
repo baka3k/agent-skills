@@ -1,8 +1,28 @@
 ---
 name: bid-staffing-planner
 description: Generate phase-based staffing plans for software bidding using default effort ratios across Discovery, Foundation, Build, Stabilize/UAT, and Go-live/Hypercare.
-version: 1.0.0
-last_updated: 2026-04-26
+version: 1.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: input-validation
+      scope: [effort_estimate, rate_card]
+      validate:
+        - file_exists
+        - file_readable
+        - json_valid
+      enable_redaction: true
+  phase:
+    staffing_calculation:
+      post: [progress-reporter]
+    ratio_validation:
+      post: [staffing-ratio-check]
+  post:
+    - name: output-redaction
+      apply_to: [staffing_plan, role_rates]
+    - name: cleanup-handler
+      paths: [staffing-data/]
+      keep: [*.json, *.md]
 ---
 
 # Bid Staffing Planner

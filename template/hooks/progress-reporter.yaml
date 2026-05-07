@@ -1,0 +1,188 @@
+# Progress Reporter Hook
+# Progress tracking for long-running workflows
+
+name: progress-reporter
+type: phase
+version: 1.0.0
+description: "Progress tracking for long-running workflows"
+category: execution
+
+# Execution configuration
+timeout: 2s
+on_failure: warn  # Progress reporting failures should not affect workflow
+
+# Implementation details
+implementation:
+  type: skill
+  ref: "progress-tracker"
+  integration: claude_code_settings
+
+# Progress reporting configuration
+reporting:
+  # Phase start reporting
+  phase_start:
+    enabled: true
+    template:
+      - "Phase {phase_number} started: {phase_name}"
+      - "  Estimated time: {estimated_time}s"
+      - "  Items to process: {item_count}"
+      - "  Started at: {timestamp}"
+
+  # Phase completion reporting
+  phase_complete:
+    enabled: true
+    template:
+      - "Phase {phase_number} complete: {phase_name}"
+      - "  Duration: {actual_time}s"
+      - "  Items processed: {item_count}"
+      - "  Completed at: {timestamp}"
+
+  # Phase error reporting
+  phase_error:
+    enabled: true
+    template:
+      - "Phase {phase_number} error: {phase_name}"
+      - "  Error: {error_message}"
+      - "  Action: {recovery_action}"
+      - "  Failed at: {timestamp}"
+
+  # Final summary reporting
+  final_summary:
+    enabled: true
+    template:
+      - "Workflow complete: {workflow_name}"
+      - "Total duration: {total_duration}s"
+      - "Phases completed: {phases_completed}/{total_phases}"
+      - "Items processed: {total_items}"
+      - "Errors: {error_count}"
+      - "Finished at: {timestamp}"
+
+# Progress tracking
+tracking:
+  # Metrics to track
+  metrics:
+    - phase_number
+    - phase_name
+    - estimated_time
+    - actual_time
+    - item_count
+    - items_processed
+    - completion_percentage
+    - error_count
+    - timestamp
+
+  # Progress calculation
+  calculate_percentage: true
+  show_eta: true  # Estimated time to completion
+
+  # Update frequency
+  update_interval: "30s"  # For long-running phases
+
+# Output configuration
+output:
+  format: structured_json
+  path: ".claude/progress/progress-{timestamp}.json"
+  retention: "7d"
+
+  # Console output
+  console:
+    enabled: true
+    format: "human_readable"
+    timestamps: true
+
+  # File output
+  file:
+    enabled: true
+    format: "json"
+    include_metrics: true
+
+# Error handling
+error_handling:
+  strategy: "continue_on_error"
+  log_failures: true
+  abort_on_report_failure: false  # Don't abort workflow on report failures
+
+# Performance
+performance:
+  max_execution_time: "2s"
+  async_reporting: true  # Report asynchronously to not block workflow
+  batch_reports: true  # Batch reports for efficiency
+
+# Examples
+examples:
+  basic:
+    description: "Basic progress reporting"
+    hooks:
+      phase:
+        all_phases:
+          post: [progress-reporter]
+
+  custom_output:
+    description: "Progress reporting with custom output path"
+    hooks:
+      phase:
+        all_phases:
+          post:
+            - name: progress-reporter
+              output:
+                path: ".progress/migration-{timestamp}.json"
+
+  no_console:
+    description: "Progress reporting without console output"
+    hooks:
+      phase:
+        all_phases:
+          post:
+            - name: progress-reporter
+              output:
+                console:
+                  enabled: false
+
+  selective_phases:
+    description: "Progress reporting for specific phases only"
+    hooks:
+      phase:
+        phase_2_dependency_graph:
+          post: [progress-reporter]
+        phase_3_ordering:
+          post: [progress-reporter]
+
+# Long-running workflow example
+long_running_example:
+  workflow: "cpp-java-migration-planner"
+  phases:
+    - phase: "Phase 0: Preflight"
+      estimated_time: "60s"
+      items: "N/A"
+      reporting: enabled
+
+    - phase: "Phase 1: Inventory"
+      estimated_time: "300s"
+      items: "{module_count}"
+      reporting: enabled
+      update_interval: "60s"  # Update every minute for long phase
+
+    - phase: "Phase 2: Dependency Graph"
+      estimated_time: "600s"
+      items: "{file_count}"
+      reporting: enabled
+      update_interval: "60s"
+
+    - phase: "Phase 3: Ordering"
+      estimated_time: "300s"
+      items: "{node_count}"
+      reporting: enabled
+
+    - phase: "Phase 4: Cycle Handling"
+      estimated_time: "180s"
+      items: "{cycle_count}"
+      reporting: enabled
+
+    - phase: "Phase 5: Worklist"
+      estimated_time: "120s"
+      items: "{worklist_count}"
+      reporting: enabled
+
+  final_summary:
+    enabled: true
+    include_metrics: true

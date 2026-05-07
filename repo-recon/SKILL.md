@@ -1,8 +1,30 @@
 ---
 name: repo-recon
 description: Build a structural understanding of an unfamiliar repository by combining project knowledge-base retrieval from mind_mcp with semantic code exploration from graph_mcp, then produce a module inventory and entry-point map. Use when onboarding to a new codebase, preparing architecture reviews, planning refactors, or creating handover documentation.
-version: 2.0.0
-last_updated: 2025-04-16
+version: 2.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: mcp-health-check
+      timeout: 10s
+    - name: input-validation
+      scope: [repository_root]
+      enable_redaction: true
+  phase:
+    knowledge_retrieval:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    semantic_exploration:
+      pre: [mcp-health-check]
+      post: [progress-reporter]
+    inventory_generation:
+      post: [progress-reporter]
+  post:
+    - name: output-redaction
+      apply_to: [module_inventory, entry_point_map]
+    - name: cleanup-handler
+      paths: [recon-data/]
+      keep: [*.json, *.md]
 ---
 
 # Repo Recon

@@ -1,8 +1,25 @@
 ---
 name: bid-estimator
 description: Compute hybrid software bid estimates with best/base/worst person-month ranges and fixed-price/T&M cost ranges using WBS complexity multipliers and capped risk buffers.
-version: 1.0.0
-last_updated: 2026-04-26
+version: 1.1.0
+last_updated: 2026-05-05
+hooks:
+  pre:
+    - name: input-validation
+      scope: [wbs_json, rate_card]
+      validate:
+        - file_exists
+        - file_readable
+        - json_valid
+      enable_redaction: true
+  post:
+    - name: output-redaction
+      apply_to: [estimate_report, cost_breakdown]
+    - name: cleanup-handler
+      paths: [estimator-output/]
+      keep: [*.json, *.md]
+    - name: metrics-report
+      include: [calculation_time, wbs_complexity]
 ---
 
 # Bid Estimator

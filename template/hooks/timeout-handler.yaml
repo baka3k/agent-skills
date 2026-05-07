@@ -1,0 +1,218 @@
+# Timeout Handler Hook
+# Phase-level timeout validation and reporting
+
+name: timeout-handler
+type: phase
+version: 1.0.0
+description: "Phase-level timeout validation and reporting"
+category: execution
+
+# Execution configuration
+timeout: 5s
+on_failure: abort  # Fail-fast: abort on timeout
+
+# Implementation details
+implementation:
+  type: skill
+  ref: "timeout-validator"
+  integration: claude_code_settings
+
+# Timeout validation
+timeout_validation:
+  # Phase timeout checks
+  phase_timeout:
+    enabled: true
+    check: "estimated_phase_time < max_phase_timeout"
+    default_max_timeout: "1800s"  # 30 minutes max for any phase
+    on_exceeds_max:
+      action: "abort"
+      message: "Phase timeout {timeout}s exceeds maximum {max_timeout}s"
+
+    on_unreasonable:
+      action: "warn"
+      message: "Phase timeout {timeout}s seems unreasonable"
+      threshold: "3600s"  # Warn if >1 hour
+
+  # Total execution timeout
+  total_timeout:
+    enabled: true
+    check: "total_execution_time < max_total_timeout"
+    default_max_total: "7200s"  # 2 hours max total
+    on_exceeds_max:
+      action: "abort"
+      message: "Total execution time {time}s exceeds maximum {max_total}s"
+
+# Timeout reporting
+timeout_reporting:
+  # Report phase timeouts
+  phase_timeouts:
+    enabled: true
+    report:
+      - phase_name: "string"
+      - estimated_time: "duration"
+      - actual_time: "duration"
+      - timeout_duration: "duration"
+      - timeout_percentage: "percentage"
+      - status: "completed|timeout|aborted"
+
+  # Aggregate timeout statistics
+  aggregate_stats:
+    enabled: true
+    report:
+      - total_phases: "count"
+      - completed_phases: "count"
+      - timed_out_phases: "count"
+      - timeout_rate: "percentage"
+      - average_phase_duration: "duration"
+      - total_execution_time: "duration"
+
+# Timeout configuration by phase type
+phase_timeouts:
+  # Fast phases (< 1 minute)
+  fast_phases:
+    max_timeout: "60s"
+    warning_threshold: "45s"
+    phases:
+      - preflight
+      - validation
+      - initialization
+
+  # Medium phases (1-5 minutes)
+  medium_phases:
+    max_timeout: "300s"
+    warning_threshold: "270s"
+    phases:
+      - inventory
+      - analysis
+      - planning
+
+  # Long phases (5-15 minutes)
+  long_phases:
+    max_timeout: "900s"
+    warning_threshold: "810s"
+    phases:
+      - discovery
+      - dependency_analysis
+      - graph_construction
+
+  # Extended phases (15-60 minutes)
+  extended_phases:
+    max_timeout: "3600s"
+    warning_threshold: "3240s"
+    phases:
+      - porting
+      - migration
+      - documentation
+
+# Timeout actions
+timeout_actions:
+  on_timeout_approaching:
+    action: "warn"
+    message: "Phase {phase_name} approaching timeout: {remaining}s remaining"
+    threshold: "0.9"  # Warn at 90% of timeout
+
+  on_timeout_exceeded:
+    action: "abort"
+    message: "Phase {phase_name} timeout exceeded: {actual}s > {timeout}s"
+    log_context: true
+
+# Phase-specific timeout configurations
+phase_specific_configs:
+  # Discovery phases
+  discovery_phases:
+    phase_1_mcp_knowledge:
+      timeout: "180s"
+      warning_at: "162s"
+
+    phase_2_semantic_exploration:
+      timeout: "300s"
+      warning_at: "270s"
+
+  # Migration phases
+  migration_phases:
+    phase_2_dependency_graph:
+      timeout: "600s"
+      warning_at: "540s"
+
+    phase_3_ordering:
+      timeout: "300s"
+      warning_at: "270s"
+
+  # Porting phases
+  porting_phases:
+    phase_5_port_slices:
+      timeout: "1800s"
+      warning_at: "1620s"
+
+# Timeout monitoring
+timeout_monitoring:
+  # Monitor active phases
+  monitor_active_phases:
+    enabled: true
+    check_interval: "30s"
+    on_stalled:
+      action: "warn"
+      message: "Phase {phase_name} appears stalled (no progress for {duration}s)"
+
+  # Monitor for timeout patterns
+  timeout_pattern_analysis:
+    enabled: true
+    track:
+      - phases_hitting_timeout
+      - phases_approaching_timeout
+      - timeout_rate_by_phase_type
+    report_on_threshold: "0.15"  # Report if 15% timeout rate
+
+# Error handling
+error_handling:
+  strategy: "fail_fast"
+  abort_on_timeout: true
+  log_timeout_details: true
+  provide_timeout_guidance: false  # No guidance in fail-fast mode
+
+# Examples
+examples:
+  basic:
+    description: "Basic timeout handler"
+    hooks:
+      phase:
+        all_phases:
+          pre: [timeout-handler]
+
+  custom_timeout:
+    description: "Custom timeout for specific phase"
+    hooks:
+      phase:
+        phase_2_dependency_graph:
+          pre:
+            - name: timeout-handler
+              max_timeout: "900s"
+              warning_at: "810s"
+
+  monitoring_enabled:
+    description: "Timeout handler with monitoring"
+    hooks:
+      phase:
+        all_phases:
+          pre:
+            - name: timeout-handler
+              monitor_active_phases: true
+              check_interval: "60s"
+
+# Integration with other hooks
+integration:
+  works_with:
+    - progress-reporter
+    - error-recovery
+    - metrics-aggregator
+
+  execution_order:
+    - timeout-handler (pre-phase)
+    - skill execution
+    - progress-reporter (post-phase)
+    - error-recovery (on error)
+
+# Performance
+performance:
+  overhead: "minimal"  # <10ms overhead for timeout validation
+  async_monitoring: true  # Don't block for monitoring

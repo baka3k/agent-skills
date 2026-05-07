@@ -1,0 +1,227 @@
+# Error Recovery Hook
+# Fail-fast error handling for all skill types
+
+name: error-recovery
+type: phase
+version: 1.0.0
+description: "Handle errors with fail-fast strategy"
+category: error_handling
+
+# Execution configuration
+timeout: 10s
+on_failure: abort  # Fail-fast strategy from validation
+
+# Implementation details
+implementation:
+  type: skill
+  ref: "error-handler"
+  integration: claude_code_settings
+
+# Error handling strategy
+strategy: "fail_fast"  # Validated decision - abort on all errors
+
+# Error recovery strategies by error type
+strategies:
+  # MCP timeout errors
+  mcp_timeout:
+    action: "abort"
+    log: "MCP timeout: {reason}, aborting skill execution"
+    fallback: null  # No fallback for fail-fast
+    retry:
+      enabled: false  # No retry for fail-fast
+      max_attempts: 1
+
+  # MCP unavailable errors
+  mcp_unavailable:
+    action: "abort"
+    log: "MCP unavailable: {reason}, aborting skill execution"
+    fallback: null  # No fallback for fail-fast
+    retry:
+      enabled: false
+      max_attempts: 1
+
+  # Phase timeout errors
+  phase_timeout:
+    action: "abort"
+    log: "Phase timeout: {reason} ({phase_name}), aborting skill execution"
+    fallback: null  # No fallback for fail-fast
+    retry:
+      enabled: false
+      max_attempts: 1
+
+  # Validation failure errors
+  validation_failure:
+    action: "abort"
+    log: "Validation failed: {reason}, aborting skill execution"
+    fallback: null  # No fallback for fail-fast
+    retry:
+      enabled: false
+      max_attempts: 1
+
+  # File access errors
+  file_access_error:
+    action: "abort"
+    log: "File access error: {reason}, aborting skill execution"
+    fallback: null
+    retry:
+      enabled: false
+      max_attempts: 1
+
+  # Dependency errors
+  dependency_error:
+    action: "abort"
+    log: "Dependency error: {reason}, aborting skill execution"
+    fallback: null
+    retry:
+      enabled: false
+      max_attempts: 1
+
+  # Generic errors
+  generic_error:
+    action: "abort"
+    log: "Error: {reason}, aborting skill execution"
+    fallback: null
+    retry:
+      enabled: false
+      max_attempts: 1
+
+# Error classification
+error_classification:
+  critical:
+    - mcp_timeout
+    - mcp_unavailable
+    - validation_failure
+    - file_access_error
+    - dependency_error
+
+  # All errors are critical in fail-fast mode
+  all_errors_critical: true
+
+# Error logging
+error_logging:
+  log_level: "ERROR"
+  log_format: "structured_json"
+  include_stack_trace: true
+  include_context: true
+  redact_sensitive_data: true  # Redact sensitive info from error logs
+
+# Error reporting
+error_reporting:
+  provide_clear_message: true
+  provide_recovery_guidance: false  # No recovery in fail-fast mode
+  provide_error_details: true
+  suggest_fixes: false  # No fixes suggested on abort
+
+# Phase-level error handling
+phase_error_handling:
+  on_phase_start_error:
+    action: "abort"
+    log: "Phase {phase_name} failed to start: {reason}"
+
+  on_phase_execution_error:
+    action: "abort"
+    log: "Phase {phase_name} execution error: {reason}"
+
+  on_phase_completion_error:
+    action: "abort"
+    log: "Phase {phase_name} completion error: {reason}"
+
+# Hook-level error handling
+hook_error_handling:
+  on_pre_hook_error:
+    action: "abort"
+    log: "Pre-hook error: {hook_name} - {reason}"
+
+  on_post_hook_error:
+    action: "warn"  # Post-hook errors don't affect skill result
+    log: "Post-hook error: {hook_name} - {reason}"
+
+  on_phase_hook_error:
+    action: "abort"
+    log: "Phase-hook error: {hook_name} in {phase_name} - {reason}"
+
+# Error context collection
+error_context:
+  collect:
+    - skill_name
+    - skill_version
+    - phase_name
+    - hook_name
+    - error_type
+    - error_message
+    - timestamp
+    - execution_context
+
+  exclude:
+    - sensitive_data
+    - api_keys
+    - passwords
+    - tokens
+
+# Error metrics
+error_metrics:
+  track:
+    - total_errors
+    - errors_by_type
+    - errors_by_phase
+    - errors_by_hook
+    - error_rate
+
+  reporting:
+    format: "json"
+    path: ".claude/metrics/errors-{timestamp}.json"
+    retention: "30d"
+
+# Examples
+examples:
+  basic:
+    description: "Basic error recovery with fail-fast"
+    hooks:
+      phase:
+        all_phases:
+          on_error: "abort"
+
+  skill_level:
+    description: "Skill-level error handling"
+    hooks:
+      on_error:
+        - name: error-recovery
+          strategy: "fail_fast"
+
+  phase_specific:
+    description: "Phase-specific error handling"
+    hooks:
+      phase:
+        phase_2_dependency_graph:
+          on_error:
+            - name: error-recovery
+              strategy: "fail_fast"
+              timeout_action: "abort"
+
+# Migration from fallback strategies
+migration_notes:
+  breaking_change: "Removed all fallback strategies (use_cache, degrade_mode, continue_partial)"
+  reason: "Fail-fast strategy validated - abort on all errors for safety"
+  impact: "Skills will abort immediately on any error instead of attempting recovery"
+  benefit: "Prevents skills from running in invalid state with potentially incorrect results"
+
+# Compatibility notes
+compatibility:
+  requires_mandatory_hooks: true
+  compatible_with_phase_1: true
+  compatible_with_phase_2: true
+
+# Testing recommendations
+testing:
+  test_error_scenarios:
+    - Test MCP unavailability
+    - Test phase timeouts
+    - Test validation failures
+    - Test file access errors
+    - Test dependency errors
+
+  expected_behavior:
+    - All errors should abort skill execution
+    - Clear error messages provided
+    - Sensitive data redacted from logs
+    - Error metrics collected

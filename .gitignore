@@ -53,3 +53,4 @@ hyper-dev/knowledge-hub/data/sources.json
 !.github/hooks/entire.json
 .gemini/
 !.gemini/settings.json
+.claude/settings.local.json
