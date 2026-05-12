@@ -27,7 +27,7 @@ Select platform → confirm → done!
 
 ## What's Included
 
-### 20 Agent Skills
+### 26 Agent Skills
 
 | Skill | Description | Category |
 |-------|-------------|----------|
@@ -51,6 +51,12 @@ Select platform → confirm → done!
 | **cpp-java-porting-orchestrator** | End-to-end orchestration of staged C++ to Java migration | Orchestration |
 | **bug-impact-analyzer** | Bug Analysis & Impact Assessment | Bug Analysis |
 | **knows** | Unified Git + MCP + memory evidence retrieval | Analysis |
+| **harness-builder** | Build AI coding agent harness infrastructure (AGENTS.md, verification, lifecycle) | Infrastructure |
+| **wiki-generator** | Generate structured wiki pages from code and docs (Index, Architecture, Module, API, Setup) | Documentation |
+| **hi-security** | STRIDE + OWASP security audit with MCP-assisted analysis and iterative auto-fix | Security |
+| **hi-scenario** | 12-dimension edge case and scenario explorer before implementation | Analysis |
+| **hi-plan** | Multi-mode technical implementation planning with red-team review | Planning |
+| **hi-predict** | 5-persona pre-analysis debate to catch issues before implementation | Analysis |
 
 **👉 [Detailed Usage Guide →](USAGE_GUIDE.md)** — Comprehensive guide for each skill with examples, inputs, outputs, and use cases.
 
@@ -109,6 +115,35 @@ agent-skill/
 ├── cpp-java-function-porting/
 ├── cpp-java-porting-orchestrator/
 ├── bug-impact-analyzer/
+├── harness-builder/                 # AI agent harness engineering
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   ├── references/                  # 6 pattern docs (memory, context, tool-registry...)
+│   ├── templates/                   # 7 harness file templates
+│   └── scripts/harness_init.py
+├── wiki-generator/                  # Code/docs → structured wiki pages
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   ├── references/wiki-page-template.md
+│   ├── templates/                   # 5 wiki page templates (index, architecture, module, api, setup)
+│   └── scripts/wiki_bootstrap.py
+├── hi-security/                     # STRIDE + OWASP security audit
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   ├── references/stride-owasp-checklist.md
+│   └── scripts/secret_scan.py
+├── hi-scenario/                     # 12-dimension edge case explorer
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   └── references/dimension-checklist.md
+├── hi-plan/                         # Multi-mode technical planning
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   └── references/                  # 5 planning reference docs
+├── hi-predict/                      # 5-persona pre-analysis debate
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   └── references/persona-playbook.md
 │
 ├── template/                        # standard templates (28 files)
 │   ├── 00_requirements/            # Requirements templates
@@ -159,7 +194,7 @@ agent-skill/
 
 ## 📖 Full Documentation
 
-**→ [Complete Usage Guide with all 20 skills →](USAGE_GUIDE.md)**
+**→ [Complete Usage Guide with all 26 skills →](USAGE_GUIDE.md)**
 
 Topics covered:
 - ✅ Installation methods (npm, shell, Python)
