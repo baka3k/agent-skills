@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harness Builder"
+  short_description: "Build, assess, and improve AI coding agent harness infrastructure."
+  default_prompt: "Use $harness-builder to design and generate harness files (AGENTS.md, feature tracking, verification, lifecycle) for this project."

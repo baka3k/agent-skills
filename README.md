@@ -4,6 +4,21 @@ A portable agent skills toolkit, deployable on Claude Code, Cursor AI, Continue.
 
 ## Quick Start (30 seconds)
 
+### Option 1: npm (Recommended)
+
+```bash
+npx @hyper_dev/skills
+```
+
+Or install globally:
+
+```bash
+npm install -g @hyper_dev/skills
+hyper-dev-skills
+```
+
+### Option 2: Local Installation
+
 ```bash
 ./scripts/install.sh
 ```
@@ -36,6 +51,10 @@ Select platform → confirm → done!
 | **cpp-java-porting-orchestrator** | End-to-end orchestration of staged C++ to Java migration | Orchestration |
 | **bug-impact-analyzer** | Bug Analysis & Impact Assessment | Bug Analysis |
 | **knows** | Unified Git + MCP + memory evidence retrieval | Analysis |
+
+**👉 [Detailed Usage Guide →](USAGE_GUIDE.md)** — Comprehensive guide for each skill with examples, inputs, outputs, and use cases.
+
+
 
 ### Multi-Platform Support
 
@@ -135,6 +154,79 @@ agent-skill/
 ├── MANIFEST.json                    # Skill metadata
 └── README.md                        # This file
 ```
+
+---
+
+## 📖 Full Documentation
+
+**→ [Complete Usage Guide with all 20 skills →](USAGE_GUIDE.md)**
+
+Topics covered:
+- ✅ Installation methods (npm, shell, Python)
+- ✅ Each skill: purpose, when to use, how to use, inputs, outputs
+- ✅ MCP requirements & validation rules
+- ✅ Skill chaining workflows
+- ✅ Troubleshooting guide
+
+---
+
+## 📦 Installation Methods
+
+### Method 1: npm (Recommended)
+
+```bash
+# Quick install
+npx @hyper_dev/skills
+
+# Or install globally
+npm install -g @hyper_dev/skills
+hyper-dev-skills
+```
+
+**Why npm?**
+- ✅ One-command installation
+- ✅ Auto-detects your platforms (Claude Code, Cursor, Copilot, etc.)
+- ✅ Self-updates
+- ✅ No git clone required
+
+### Method 2: Shell Script (Local)
+
+```bash
+git clone https://github.com/hyper-dev/agent-skill.git
+cd agent-skill
+./scripts/install.sh
+```
+
+### Method 3: Python Installer (Advanced)
+
+```bash
+python scripts/install_agent_kit_with_templates.py \
+  --agent claude-code \
+  --include-templates
+```
+
+### Method 4: Manual (Platform-Specific)
+
+**Claude Code:**
+```bash
+cp -r {bidding-orchestrator,deep-codebase-discovery,...} ~/.claude/skills/
+```
+
+**GitHub Copilot:**
+```bash
+cp -r {bidding-orchestrator,deep-codebase-discovery,...} .github/skills/
+```
+
+**Cursor:**
+```bash
+# Global scope
+cp -r .cursorrules ~/.cursorrules
+
+# Local scope (per-project)
+cp -r .cursorrules .cursorrules
+```
+
+---
 
 ## Contributing
 

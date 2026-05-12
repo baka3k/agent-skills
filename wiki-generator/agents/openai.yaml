@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wiki Generator"
+  short_description: "Generate structured wiki documentation from source code and docs."
+  default_prompt: "Use $wiki-generator to create wiki pages (architecture, modules, API, setup) from this codebase."

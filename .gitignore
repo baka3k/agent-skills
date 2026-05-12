@@ -54,3 +54,5 @@ hyper-dev/knowledge-hub/data/sources.json
 .gemini/
 !.gemini/settings.json
 .claude/settings.local.json
+
+.commandcode

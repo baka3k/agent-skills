@@ -25,7 +25,9 @@ hooks:
     phase_3_synthesis:
       pre: [mcp-health-check]
       post: [progress-reporter, evidence-validation]
-    phase_4_bundle:
+    phase_4_reconciliation:
+      post: [progress-reporter]
+    phase_5_bundle:
       post: [progress-reporter]
     all_phases:
       post: [progress-reporter]
@@ -1062,43 +1064,15 @@ health_checks:
 
 ## Version History & Changelog
 
+### Version 2.1.0 (2026-05-05)
+
+**Fixes:**
+- Fixed: Phase numbering mismatch between hooks section and document body (added phase_4_reconciliation hook, renamed phase_4_bundle → phase_5_bundle)
+- Fixed: Timeout configuration aligned with 6-phase workflow
+- Updated: IMPROVEMENTS_SUMMARY.md version reference synced to 2.1.0
+- Improved: run_discovery_pipeline.py script validation
+
 ### Version 2.0.0 (2025-04-16)
-
-**Breaking Changes:**
-- Added mandatory input validation and sanitization
-- Added mandatory sensitive data redaction
-- Enhanced timeout configuration (was unlimited, now 15min max)
-- Enhanced fallback strategy (was implicit, now explicit with rules)
-
-**New Features:**
-- ✅ Added Security & Privacy section with validation and redaction
-- ✅ Added Performance & UX section with timeouts, progress feedback, caching
-- ✅ Enhanced fallback strategy with degraded mode
-- ✅ Added conflict resolution rules for mind_mcp vs graph_mcp vs filesystem
-- ✅ Added specific MCP function names with parameters and outputs
-- ✅ Added observability metrics and health monitoring
-- ✅ Added version history and changelog
-
-**Improvements:**
-- Enhanced MCP integration with specific function names
-- Added preflight checks for MCP capability validation
-- Enhanced error handling with specific recovery strategies per phase
-- Added progress reporting after each phase
-- Added conflict resolution rules with priority-based arbitration
-- Added health monitoring and alerting
-
-**Bug Fixes:**
-- Fixed: No input validation (security vulnerability)
-- Fixed: No timeout handling (could hang indefinitely)
-- Fixed: No fallback strategy (complete failure on MCP down)
-- Fixed: No conflict resolution (contradictory evidence unresolved)
-- Fixed: No progress feedback (poor UX for long operations)
-
-**Migration Guide:**
-- Update any custom timeouts to new configuration format
-- Review and update input validation rules if customizing
-- Review and update redaction patterns if adding new sensitive data types
-- Update health monitoring integration if using custom endpoints
 
 ### Version 1.0.0 (Initial Release)
 

@@ -63,7 +63,7 @@ def run_stage(
         return {
             "status": "missing",
             "script": str(script_path),
-            "message": "Companion script not found",
+            "message": f"Companion script not found: {script_path.name}",
         }
 
     command = [
@@ -151,6 +151,10 @@ def main() -> int:
 
     has_failure = any(stage["status"] == "failed" for stage in stages)
     has_success = any(stage["status"] == "ok" for stage in stages)
+    all_missing = all(stage["status"] == "missing" for stage in stages)
+
+    if all_missing:
+        print("All companion scripts missing. Verify repo-recon and tech-build-audit are installed.", file=sys.stderr)
     if has_failure:
         return 1
     if not has_success:

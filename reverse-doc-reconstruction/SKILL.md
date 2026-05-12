@@ -11,17 +11,21 @@ hooks:
       scope: [source_root, documentation_scope]
       enable_redaction: true
   phase:
-    bootstrap:
+    preflight:
       post: [progress-reporter]
     business_context:
       pre: [mcp-health-check]
+      post: [progress-reporter]
+    bootstrap:
       post: [progress-reporter]
     coverage_baseline:
       post: [progress-reporter]
     tracing:
       pre: [mcp-health-check]
       post: [progress-reporter, timeout-handler]
-    use_case_generation:
+    uc_consolidation:
+      post: [progress-reporter]
+    uc_artifacts:
       post: [progress-reporter]
     detail_design:
       post: [progress-reporter]
@@ -176,12 +180,13 @@ timeouts:
   # Phase timeouts
   phase_0_preflight_timeout: 30s      # Preflight and context setup
   phase_1_business_context_timeout: 180s # mind_mcp context discovery
-  phase_2_entry_map_timeout: 240s    # graph_mcp entry point discovery
-  phase_3_call_flows_timeout: 360s    # graph_mcp call flow tracing
-  phase_4_uc_consolidation_timeout: 180s # Use case consolidation
-  phase_5_uc_artifacts_timeout: 300s  # UC artifact generation
-  phase_6_design_artifacts_timeout: 600s # Detail design artifact generation
-  phase_7_quality_gates_timeout: 120s # Review and quality gates
+  phase_2_bootstrap_timeout: 60s     # Bootstrap output package
+  phase_3_coverage_baseline_timeout: 240s # graph_mcp entry point discovery
+  phase_4_call_flows_timeout: 360s    # graph_mcp call flow tracing
+  phase_5_uc_consolidation_timeout: 180s # Use case consolidation
+  phase_6_uc_artifacts_timeout: 300s  # UC artifact generation
+  phase_7_design_artifacts_timeout: 600s # Detail design artifact generation
+  phase_8_quality_gates_timeout: 120s # Review and quality gates
 
   # Total workflow timeout
   total_workflow_timeout: 1800s     # Entire reconstruction (30 minutes)
@@ -407,19 +412,27 @@ error_recovery:
       action: "continue_with_partial"
       log: "Partial business context retrieved, continuing with available data"
 
-  phase_2_entry_map:
+  phase_2_bootstrap:
+    on_template_missing:
+      action: "abort_with_error"
+      log: "Template files missing, aborting bootstrap"
+    on_output_path_error:
+      action: "abort_with_error"
+      log: "Output path creation failed, aborting"
+
+  phase_3_coverage_baseline:
     on_mcp_timeout:
       action: "fallback_to_filesystem"
       log: "graph_mcp timeout, using rg/grep for entry point discovery"
       continue: true
 
-  phase_3_call_flows:
+  phase_4_call_flows:
     on_mcp_timeout:
       action: "trace_main_flows_only"
       log: "graph_mcp timeout, tracing main flows only, skipping alt/error"
       continue: true
 
-  phase_4_uc_consolidation:
+  phase_5_uc_consolidation:
     on_evidence_conflict:
       action: "apply_conflict_resolution_rules"
       log: "Evidence conflict detected, applying resolution rules"
@@ -427,19 +440,19 @@ error_recovery:
       action: "mark_unresolved"
       log: "Incomplete evidence, marking unresolved with HANDLED=MANUAL"
 
-  phase_5_uc_artifacts:
+  phase_6_uc_artifacts:
     on_diagram_generation_failure:
       action: "create_text_diagrams"
       log: "Diagram generation failed, creating text-based diagrams"
       continue: true
 
-  phase_6_design_artifacts:
+  phase_7_design_artifacts:
     on_mapping_failure:
       action: "document_mapping_gaps"
       log: "UC to design mapping failed, documenting gaps"
       continue: true
 
-  phase_7_quality_gates:
+  phase_8_quality_gates:
     on_coverage_threshold_not_met:
       action: "report_gaps_and_continue"
       log: "Coverage threshold not met, reporting gaps"
@@ -632,11 +645,7 @@ bootstrap_script:
       - "02_detail_design/tpl_batch_process_design.md"
 ```
 
-### Phase 3: Discover Business Context from mind_mcp (Cached, 3min)
-
-[See Phase 1 above - cached results used]
-
-### Phase 4: Build coverage baseline and entry map (4min)
+### Phase 3: Build coverage baseline and entry map (4min)
 
 ```yaml
 steps:
@@ -644,7 +653,7 @@ steps:
   2. Capture baseline metrics
   3. Document unknown or low-confidence areas
   4. Cache results to mcp_tracing_cache.json
-  5. Report progress: "Phase 4 complete: {entry_count} entry points discovered"
+  5. Report progress: "Phase 3 complete: {entry_count} entry points discovered"
 
 mcp_functions:
   - list_up_entrypoint [required]
@@ -697,7 +706,7 @@ fallback:
   on_timeout: "Return partial results, document coverage gap"
 ```
 
-### Phase 5: Trace call flows with graph_mcp (6min)
+### Phase 4: Trace call flows with graph_mcp (6min)
 
 ```yaml
 steps:
@@ -706,7 +715,7 @@ steps:
   3. Verify indirect calls and IPC
   4. Apply context-control strategy for large codebases
   5. Cache results
-  6. Report progress: "Phase 5 complete: {flows_count} flows traced"
+  6. Report progress: "Phase 4 complete: {flows_count} flows traced"
 
 mcp_functions:
   - trace_flow [required]
@@ -760,7 +769,7 @@ fallback:
   on_timeout: "Trace main flows only, skip alt/error paths"
 ```
 
-### Phase 6: Discover and consolidate use cases (3min)
+### Phase 5: Discover and consolidate use cases (3min)
 
 ```yaml
 steps:
@@ -769,7 +778,7 @@ steps:
   3. Group flows into UC units
   4. Update usecase_list and usecase_metrics
   5. Tag each UC with evidence provenance
-  6. Report progress: "Phase 6 complete: {uc_count} use cases consolidated"
+  6. Report progress: "Phase 5 complete: {uc_count} use cases consolidated"
 
 uc_verification:
   business_purpose: "From mind_mcp business context"
@@ -787,14 +796,14 @@ uc_output_files:
   - uc001_{module}.md (duplicate per discovered UC)
 ```
 
-### Phase 7: Produce UC detail artifacts with diagrams (5min)
+### Phase 6: Produce UC detail artifacts with diagrams (5min)
 
 ```yaml
 steps:
   1. For each UC, fill UC template with evidence
   2. Generate sequence and class diagrams (Mermaid)
   3. Add tags and evidence links
-  4. Report progress: "Phase 7 complete: {uc_count} UC artifacts generated"
+  4. Report progress: "Phase 6 complete: {uc_count} UC artifacts generated"
 
 uc_artifact_content:
   from_mind_mcp:
@@ -818,7 +827,7 @@ uc_artifact_content:
     - confidence_levels: "High/Medium/Low per claim"
 ```
 
-### Phase 8: Derive detail design artifacts from validated UCs (10min)
+### Phase 7: Derive detail design artifacts from validated UCs (10min)
 
 ```yaml
 steps:
@@ -830,7 +839,7 @@ steps:
      - table design + SQL design
      - batch process design (if batch flows exist)
   4. Apply consistency checks
-  5. Report progress: "Phase 8 complete: {artifact_count} design artifacts generated"
+  5. Report progress: "Phase 7 complete: {artifact_count} design artifacts generated"
 
 mapping_rules:
   from usecase_to_detail_design:
@@ -858,7 +867,7 @@ output_files:
   - batch_process_design_{module}.md (if applicable)
 ```
 
-### Phase 9: Run review and quality gates (2min)
+### Phase 8: Run review and quality gates (2min)
 
 ```yaml
 steps:
@@ -866,7 +875,7 @@ steps:
   2. Check alignment between UCs, diagrams, and design docs
   3. Mark unresolved gaps with follow-up actions
   4. Generate final quality report
-  5. Report progress: "Phase 9 complete: Quality gates evaluated"
+  5. Report progress: "Phase 8 complete: Quality gates evaluated"
 
 quality_metrics:
   coverage_metrics:
@@ -978,6 +987,17 @@ metrics:
 ```
 
 ## Version History & Changelog
+
+### Version 2.1.0 (2026-05-05)
+
+**Fixes:**
+- Fixed: Removed duplicate Phase 3 (was redundant with Phase 1)
+- Fixed: Renumbered phases 4-9 → 3-8 after removing duplicate
+- Fixed: Hooks section reordered to match document phase order (preflight → business_context → bootstrap → ...)
+- Fixed: Added missing preflight hook
+- Fixed: Split use_case_generation hook into uc_consolidation + uc_artifacts to match phases
+- Fixed: Timeout config updated to 9 phases (0-8) with correct naming
+- Fixed: IMPROVEMENTS_SUMMARY.md version synced to 2.1.0
 
 ### Version 2.0.0 (2025-04-16)
 

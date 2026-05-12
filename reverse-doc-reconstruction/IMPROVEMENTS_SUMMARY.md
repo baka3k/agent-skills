@@ -1,7 +1,7 @@
 # Reverse Doc Reconstruction - Improvements Summary
 
-**Date**: 2025-04-16
-**Version**: 1.0.0 → 2.0.0
+**Date**: 2025-04-16 (updated 2026-05-05)
+**Version**: 1.0.0 → 2.1.0
 **Status**: ✅ **PASS** (Target: ≥102/120)
 
 ---
@@ -636,8 +636,8 @@ quality_gates:
 ```yaml
 # NEW: Comprehensive changelog
 version_history:
-  - version: "2.0.0"
-    date: "2025-04-16"
+  - version: "2.1.0"
+    date: "2026-05-05"
     breaking_changes:
       - Added mandatory input validation
       - Added mandatory data redaction

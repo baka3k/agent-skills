@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CortexHarness Feature List",
+  "description": "Task backlog for agent-driven development sessions (CortexHarness format)",
+  "type": "object",
+  "properties": {
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique task identifier (e.g., task-001)",
+            "pattern": "^task-\\d+$"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short task title (one line)"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["feature", "bugfix", "refactor"],
+            "description": "Task category"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["todo", "in_progress", "done", "blocked"],
+            "description": "Current lifecycle state"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Lower number = higher priority"
+          },
+          "graph_entry_node": {
+            "type": ["string", "null"],
+            "description": "Fully-qualified symbol used as graph context entry point (namespace.Class.method)"
+          },
+          "related_modules": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Module / package names relevant to this task"
+          },
+          "related_files": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "File paths explicitly in scope for this task"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-form notes, issue references, context"
+          },
+          "session_id": {
+            "type": ["string", "null"],
+            "description": "ID of the session that last processed this task (set by orchestrator)"
+          }
+        },
+        "required": ["id", "title", "type", "status", "priority"]
+      }
+    }
+  },
+  "required": ["features"]
+}
