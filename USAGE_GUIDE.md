@@ -24,7 +24,7 @@ hyper-dev-skills
 ### Method 2: Local Script
 
 ```bash
-git clone https://github.com/hyper-dev/agent-skill.git
+git clone https://github.com/baka3k/agent-skills.git
 cd agent-skill
 ./scripts/install.sh
 
