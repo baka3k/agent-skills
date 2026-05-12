@@ -1,0 +1,4 @@
+interface:
+  display_name: "HI Scenario"
+  short_description: "Edge case and scenario explorer across 12 decomposition dimensions."
+  default_prompt: "Use $hi-scenario to decompose this feature into edge case scenarios across 12 dimensions."

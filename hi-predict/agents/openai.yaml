@@ -1,0 +1,4 @@
+interface:
+  display_name: "HI Predict"
+  short_description: "Five expert personas debate proposed changes before implementation."
+  default_prompt: "Use $hi-predict to run a 5-persona pre-analysis on this proposed change before implementation."

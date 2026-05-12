@@ -1,0 +1,4 @@
+interface:
+  display_name: "HI Security"
+  short_description: "STRIDE + OWASP security audit with automated fix capability."
+  default_prompt: "Use $hi-security to run a security audit on this codebase with STRIDE + OWASP methodology."
