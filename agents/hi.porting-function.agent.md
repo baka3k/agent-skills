@@ -1,5 +1,33 @@
 ---
 description: Port từng function C++ sang Java với logic chi tiết: extract code từ MCP Graph, convert type/lambda/pointer, implement compat layer calls, validate syntax.
+variables:
+  input:
+    - name: $SOURCE_FOLDER
+      source: CLI --source-folder
+      required: true
+    - name: $OUTPUT_DIR
+      source: CLI --output (default: porting-output/)
+      required: false
+  loop:
+    - name: $CURRENT_FILE
+      source: State.current_file (from file-structure)
+      required: true
+    - name: $CURRENT_INDEX
+      source: State.current_function_index
+      required: true
+    - name: $FUNCTION_LIST
+      source: State.function_list (from file-structure scan)
+      required: true
+    - name: $WORKLIST
+      source: State.file_worklist
+      required: false
+  internal:
+    - name: type-mappings.json
+      source: pre-porting-data/type-mappings.json
+      required: true
+    - name: compat-layer-design.md
+      source: pre-porting-data/compat-layer-design.md
+      required: false
 handoffs:
   - label: Next Function (same file)
     agent: hi.porting-function
@@ -99,6 +127,7 @@ deps = mcp_graph_mcp_impact(
 
 > **TUYỆT ĐỐI KHÔNG ĐƯỢC VI PHẠM CÁC QUY TẮC SAU:**
 
+0. **GIỮ NGUYÊN** package declaration + file location — file `.java` PHẢI nằm đúng thư mục tương ứng với package name (giống hệt C++ folder structure)
 1. **GIỮ NGUYÊN** function name — `DoWork` → `DoWork` (KHÔNG camelCase/snake_case)
 2. **GIỮ NGUYÊN** parameter names — `dwParam` → `dwParam` (kể cả Hungarian notation)
 3. **GIỮ NGUYÊN** variable names — `m_strName` → `m_strName` (kể cả prefix m_)
@@ -142,6 +171,8 @@ public boolean DoWork(int dwParam, String lpszData) {
     return false;
 }
 ```
+
+> **⚠️ Package preservation:** Nếu function porting cần tạo thêm helper class/temporary class, file đó PHẢI được đặt trong cùng package (cùng folder) với file gốc. KHÔNG tạo package mới không tương ứng với C++ source structure.
 
 ### Step 4: Conversion Rules Quick Reference
 

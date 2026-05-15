@@ -23,6 +23,25 @@ except ImportError:
     sys.exit(1)
 
 
+def parse_skill_filter(raw: str | None) -> List[str] | None:
+    """Parse comma-separated skill ids while preserving order."""
+    if raw is None:
+        return None
+
+    skills: List[str] = []
+    seen: set[str] = set()
+    for item in raw.split(","):
+        skill_id = item.strip()
+        if not skill_id or skill_id in seen:
+            continue
+        skills.append(skill_id)
+        seen.add(skill_id)
+
+    if not skills:
+        raise ValueError("--skills was provided but no skill ids were found")
+    return skills
+
+
 class EnhancedAgentSkillsInstaller:
     """Enhanced installer for multi-platform AI skill kit with template support."""
 
@@ -79,6 +98,7 @@ class EnhancedAgentSkillsInstaller:
         project_root: Path | None = None,
         include_templates: bool = True,
         template_source: Path | None = None,
+        skill_filter: List[str] | None = None,
     ):
         self.kit_root = kit_root
         self.agent = agent
@@ -86,6 +106,7 @@ class EnhancedAgentSkillsInstaller:
         self.project_root = project_root or Path.cwd()
         self.include_templates = include_templates
         self.template_source = template_source or kit_root / "template"
+        self.skill_filter = skill_filter
         self.agent_config = self.AGENT_CONFIGS.get(agent)
 
         if not self.agent_config:
@@ -111,7 +132,21 @@ class EnhancedAgentSkillsInstaller:
             skill_file = item / "SKILL.md"
             if item.is_dir() and skill_file.exists():
                 skills.append(skill_file)
-        return skills
+
+        if self.skill_filter is None:
+            return skills
+
+        skills_by_id = {skill_file.parent.name: skill_file for skill_file in skills}
+        missing = [skill_id for skill_id in self.skill_filter if skill_id not in skills_by_id]
+        if missing:
+            available = ", ".join(sorted(skills_by_id))
+            raise ValueError(
+                "Unknown skill id(s): "
+                + ", ".join(missing)
+                + f". Available skills: {available}"
+            )
+
+        return [skills_by_id[skill_id] for skill_id in self.skill_filter]
 
     @staticmethod
     def _timestamp() -> str:
@@ -253,13 +288,16 @@ class EnhancedAgentSkillsInstaller:
         print(f"Scope: {self.scope}")
         print(f"Project root: {self.project_root}")
         print(f"Include templates: {self.include_templates}")
+        if self.skill_filter:
+            print(f"Skills filter: {', '.join(self.skill_filter)}")
         print(f"{'='*60}\n")
 
         install_path = self.get_install_path()
         print(f"Install path: {install_path}")
 
         skills = [parse_skill_file(path) for path in self.discover_skill_files()]
-        print(f"\nFound {len(skills)} skills to install:")
+        label = "selected skills" if self.skill_filter else "skills"
+        print(f"\nFound {len(skills)} {label} to install:")
         for skill in skills:
             desc = str(skill["description"]).strip()
             truncated = (desc[:64] + "...") if len(desc) > 67 else desc
@@ -363,7 +401,7 @@ def _resolve_scope_and_root(
     return scope, requested_project_root.resolve()
 
 
-def interactive_mode(kit_root: Path) -> int:
+def interactive_mode(kit_root: Path, skill_filter: List[str] | None = None) -> int:
     print(f"\n{'='*60}")
     print("Agent Skills Kit - Interactive Installer (Enhanced)")
     print(f"{'='*60}\n")
@@ -423,6 +461,7 @@ def interactive_mode(kit_root: Path) -> int:
         project_root=selected_project_root,
         include_templates=include_templates,
         template_source=template_source,
+        skill_filter=skill_filter,
     )
 
     print("\nStep 3/3 - Confirm")
@@ -431,6 +470,8 @@ def interactive_mode(kit_root: Path) -> int:
     print(f"  Project root: {selected_project_root}")
     print(f"  Install path: {installer.get_install_path()}")
     print(f"  Include templates: {include_templates}")
+    if skill_filter:
+        print(f"  Skills: {', '.join(skill_filter)}")
 
     return 0 if installer.install() else 1
 
@@ -458,6 +499,9 @@ Examples:
   # Install into current folder
   python scripts/install_agent_kit_with_templates.py . --agent copilot
 
+  # Install only selected skills
+  python scripts/install_agent_kit_with_templates.py . --agent copilot --skills testcase-analyze-bug,testcase-apply-format
+
   # Install from custom kit root
   python scripts/install_agent_kit_with_templates.py --kit-root /path/to/agent-skill --agent claude-code --scope global
 
@@ -472,6 +516,7 @@ Examples:
     parser.add_argument("--kit-root", type=Path, help="Custom kit root path (default: parent of scripts/)")
     parser.add_argument("--project-root", type=Path, default=Path.cwd(), help="Project root (for local installation)")
     parser.add_argument("--template-source", type=Path, help="Custom template directory path")
+    parser.add_argument("--skills", help="Comma-separated skill ids to install (default: all skills)")
     parser.add_argument("--include-templates", action="store_true", default=True, dest="include_templates", help="Include template directory (default: True)")
     parser.add_argument("--no-templates", action="store_false", dest="include_templates", help="Exclude template directory")
     parser.add_argument("--interactive", "-i", action="store_true", help="Interactive installation mode")
@@ -486,10 +531,12 @@ Examples:
         list_agents()
         return 0
 
-    if args.interactive:
-        return interactive_mode(kit_root)
-
     try:
+        skill_filter = parse_skill_filter(args.skills)
+
+        if args.interactive:
+            return interactive_mode(kit_root, skill_filter)
+
         selected_agent = args.agent
         selected_scope = args.scope
         selected_project_root = args.project_root
@@ -503,7 +550,7 @@ Examples:
                 selected_project_root = Path(args.install_target).expanduser().resolve()
 
         if not selected_agent:
-            return interactive_mode(kit_root)
+            return interactive_mode(kit_root, skill_filter)
 
         selected_scope, selected_project_root = _resolve_scope_and_root(
             selected_agent=selected_agent,
@@ -518,6 +565,7 @@ Examples:
             project_root=selected_project_root,
             include_templates=args.include_templates,
             template_source=args.template_source,
+            skill_filter=skill_filter,
         )
         return 0 if installer.install(dry_run=args.dry_run) else 1
     except ValueError as e:

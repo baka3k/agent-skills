@@ -36,13 +36,16 @@ Tài liệu hoá use case nghiệp vụ từ kết quả phân tích/trace code.
 | `tpl_usecase_list.md`    | Danh sách Use Case | Kết quả khám phá UC toàn module: meta, actors, flows, IPC mapping    |
 | `tpl_usecase_detail.md`  | Chi tiết Use Case  | 1 UC đầy đủ: main/alt/error flow, sequence & class diagram, metrics  |
 | `tpl_usecase_metrics.md` | Dashboard Metrics  | Theo dõi coverage UC, entry point, RISK=HIGH, error path toàn module |
+| `tpl_usecase_discovery.md` | Generic UC Discovery | Bản generic cho discovery co kiem soat context, summary-first |
+| `tpl_usecase_detail_generic.md` | Generic UC Detail | Bản generic cho 1 use case chi tiết, diagram, metrics |
+| `tpl_usecase_metrics_generic.md` | Generic UC Metrics | Bản generic dashboard cho coverage, risk, dependency |
 
 ### Khi nào dùng nhóm này
 
 - Khi cần **phân tích nghiệp vụ** từ source code (reverse engineering)
 - Khi cần **tài liệu hoá** flow cho team review hoặc onboarding
 - Khi cần **trace** entry point, IPC communication, risk node
-- Thứ tự tạo: `tpl_usecase_list.md` → `tpl_usecase_detail.md` (×N UC) → `tpl_usecase_metrics.md`
+- Thứ tự tạo: `tpl_usecase_discovery.md` → `tpl_usecase_detail_generic.md` (×N UC) → `tpl_usecase_metrics_generic.md`
 
 ### Mô tả chi tiết
 

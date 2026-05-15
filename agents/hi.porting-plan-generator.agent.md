@@ -1,5 +1,36 @@
 ---
 description: Tạo porting execution plan hoàn chỉnh từ MCP Graph call graph sau pre-porting. Phân tích dependency → topological sort → module/class/function ordering → wave-based plan. Output 2 định dạng: porting-plan.md (có giải thích) + porting-plan.json (machine-readable).
+variables:
+  input:
+    - name: $SOURCE_FOLDER
+      source: CLI --source-folder
+      required: true
+    - name: $MODULE_NAME
+      source: CLI --module
+      required: true
+    - name: $OUTPUT_DIR
+      source: CLI --output (default: porting-output/)
+      required: false
+  internal:
+    - name: pre-porting-data/type-mappings.json
+      source: pre-porting output
+      required: true
+    - name: pre-porting-data/migration-roadmap.md
+      source: pre-porting output
+      required: true
+    - name: pre-porting-data/compat-layer-design.md
+      source: pre-porting output
+      required: false
+  output:
+    - name: porting-plan.md
+      path: porting-output/porting-plan/porting-plan.md
+      required: true
+    - name: porting-plan.json
+      path: porting-output/porting-plan/porting-plan.json
+      required: true
+    - name: $FIRST_MODULE
+      computed: first module in plan
+      required: true
 handoffs:
   - label: Start File Structure Porting
     agent: hi.porting-file-structure
@@ -67,7 +98,15 @@ Sau khi `hi.pre-porting` hoàn tất, agent này sẽ:
 
 ## 🎯 Priority #1: 1-1 Mapping — Plan Phải Tôn Trọng 1-1
 
-> Kế hoạch porting KHÔNG được đề xuất đổi tên/refactor. Mọi function/class/file/module name trong plan phải GIỮ NGUYÊN từ C++ source.
+> Kế hoạch porting KHÔNG được đề xuất đổi tên/refactor. 
+> **Tất cả** các yếu tố sau phải GIỮ NGUYÊN từ C++ source:
+> - **Package/folder path** → Java package name (GIỮ NGUYÊN 100%, chỉ thay `/` → `.`)
+> - **File name** → Java file name (giữ nguyên, chỉ đổi extension)
+> - **Class name** → Java class name (GIỮ NGUYÊN tuyệt đối)
+> - **Function name** → Java method name (GIỮ NGUYÊN)
+> - **Parameter name** → Java param name (GIỮ NGUYÊN)
+> 
+> Cột `Java Package` trong full listing table PHẢI là C++ folder path convert 1-1.
 
 ---
 
@@ -323,65 +362,84 @@ Total leaf nodes: 47 / 215 functions (21.8%)
 
 ## Phase 5: Generate Complete Execution Plan
 
-### 5.1 Plan Structure
+> **YÊU CẦU BẮT BUỘC:** Plan phải liệt kê **tất cả** module/class/function trong scope (KHÔNG phải ví dụ).
+> Mỗi function nhận 1 **số thứ tự GLOBAL duy nhất** (F001, F002, ...), không phân theo wave.
+
+### 5.1 Consolidated Full Listing (BẮT BUỘC)
+
+Sau khi có đủ wave/class/function ordering từ Phase 1-4, tạo **1 bảng duy nhất liệt kê tất cả functions**:
 
 ```markdown
-# Porting Execution Plan: <Module>
+# 📋 FULL PORTING LIST — ModuleSample01
 
-## 📊 Summary
-- Total modules: N
-- Total classes: M
-- Total functions: K
-- Waves: W
-- Circular dependencies: C
-- Leaf nodes (parallel): L
+**Tổng cộng:** 5 modules | 23 classes | 215 functions | 4 waves | 47 leaf nodes
+═══════════════════════════════════════════════════════════════════════════════════
 
-## 🔄 Wave 0: Foundation (No Dependencies)
-### Module: UtilsLib (Leaf Module)
-#### Class: CStringUtil (Leaf Class)
-| # | Function | Leaf | Notes |
-|---|----------|------|-------|
-| 0.1 | Trim | 🌿 | String utility |
-| 0.2 | Split | 🌿 | String utility |
-| 0.3 | Format | 🌿 | String utility → needs CStringCompat |
-
-## 🔄 Wave 1: Utils Consumers
-### Module: DataLayer
-#### Class: CDbConfig
-| # | Function | Dependencies | Notes |
-|---|----------|-------------|-------|
-| 1.1 | LoadDbConfig | UtilsLib.CStringUtil.Format | Cần compat CString |
-
-## 🔄 Wave 2: Business Logic
-...
-
-## 🔄 Wave N: Circular Dependencies (Special Handling)
-| SCC | Modules | Resolution |
-|-----|---------|------------|
-| SCC-1 | ModA ↔ ModB | Extract interface IModBridge |
+| STT | ID     | Module       | Class                | Function          | Signature                     | C++ File           | Java Package  | Wave | Leaf | Dependencies         |
+|-----|--------|-------------|----------------------|-------------------|-------------------------------|--------------------|---------------|------|------|----------------------|
+| 1   | F001   | UtilsLib     | CStringUtil          | Trim              | CString Trim(CString)         | utils/CString.cpp  | utils         | W0   | 🌿   | —                    |
+| 2   | F002   | UtilsLib     | CStringUtil          | Split             | CArray<CString> Split(...)    | utils/CString.cpp  | utils         | W0   | 🌿   | —                    |
+| 3   | F003   | UtilsLib     | CStringUtil          | Format            | CString Format(CString, ...)  | utils/CString.cpp  | utils         | W0   | 🌿   | —                    |
+| ... | ...    | ...          | ...                  | ...               | ...                           | ...                | ...           | ...  | ...  | ...                  |
+| 45  | F045   | DataLayer    | CDbConfig            | LoadDbConfig      | BOOL LoadDbConfig(CString)    | data/DbConfig.cpp  | data          | W1   |      | F003                |
+| 46  | F046   | DataLayer    | CDbConfig            | ParseConnection   | BOOL ParseConnection(LPTSTR)  | data/DbConfig.cpp  | data          | W1   |      | F003                |
+| ... | ...    | ...          | ...                  | ...               | ...                           | ...                | ...           | ...  | ...  | ...                  |
+| 210 | F210   | ModuleSample01 | CModuleSampleActivity | DoWork            | BOOL DoWork(DWORD, LPTSTR)    | act/Activity.cpp   | act           | W3   |      | F045, F167          |
+| 211 | F211   | ModuleSample01 | CModuleSampleActivity | OnReceive         | void OnReceive(LPVOID,DWORD)  | act/Activity.cpp   | act           | W3   |      | F210                |
+| 212 | F212   | ModuleSample01 | CModuleSampleActivity | Cleanup           | void Cleanup()                | act/Activity.cpp   | act           | W4   |      | F211                |
+| ... | ...    | ...          | ...                  | ...               | ...                           | ...                | ...           | ...  | ...  | ...                  |
+| 215 | F215   | ModuleSample01 | CModuleSampleDispatcher | Dispatch       | void Dispatch(DWORD)          | act/Dispatcher.cpp | act           | W4   | 🌿   | —                    |
+═══════════════════════════════════════════════════════════════════════════════════
 ```
 
-### 5.2 Output Files
+**Quy tắc đánh số:**
 
-```
-porting-output/
-└── porting-plan/
-    ├── porting-plan.md          # Full plan với giải thích
-    ├── porting-plan.json        # Machine-readable structured plan
-    ├── leaf-nodes.md            # Danh sách leaf nodes cho parallel
-    ├── circular-deps.md         # Circular dependencies + resolution
-    └── dependency-graph.dot     # (optional) GraphViz visualization
+| Cột | Ý nghĩa | Định dạng |
+|-----|---------|-----------|
+| **STT** | Số thứ tự trong bảng (1, 2, 3...) | Integer |
+| **ID** | Mã function duy nhất toàn cục | `F` + 3 digits (`F001`) |
+| **Module** | Tên module C++ (GIỮ NGUYÊN) | String |
+| **Class** | Tên class C++ (GIỮ NGUYÊN) | String |
+| **Function** | Tên function C++ (GIỮ NGUYÊN) | String |
+| **Signature** | Function signature với types C++ | String |
+| **C++ File** | File path relative to source folder | Path |
+| **Java Package** | Package name = C++ folder path (GIỮ NGUYÊN) | Package |
+| **Wave** | Wave number (W0, W1, W2...) | String |
+| **Leaf** | 🌿 nếu là leaf node | Marker |
+| **Dependencies** | F-IDs của các function cần port trước | F001, F002... |
+
+### 5.2 Grouped by Wave (kèm trong porting-plan.md)
+
+Sau bảng full listing, thêm các bảng grouped theo wave:
+
+```markdown
+## 🔄 WAVE 0 — Foundation (14 functions — CÓ THỂ SONG SONG)
+
+| STT | ID   | Module    | Class         | Function    | Leaf |
+|-----|------|-----------|---------------|-------------|------|
+| 1   | F001 | UtilsLib  | CStringUtil   | Trim        | 🌿   |
+| 2   | F002 | UtilsLib  | CStringUtil   | Split       | 🌿   |
+| 3   | F003 | UtilsLib  | CStringUtil   | Format      | 🌿   |
+| ... | ...  | ...       | ...           | ...         | ...  |
+
+## 🔄 WAVE 1 — Foundational Consumers (38 functions)
+
+| STT | ID   | Module     | Class      | Function       | Depends On |
+|-----|------|------------|------------|----------------|------------|
+| 15  | F015 | DataLayer  | CDbConfig  | LoadDbConfig   | F003       |
+| 16  | F016 | DataLayer  | CDbConfig  | ParseConnection| F003       |
+| ... | ...  | ...        | ...        | ...            | ...        |
 ```
 
-### 5.3 porting-plan.json Structure
+### 5.3 porting-plan.json — Phải có "conversion_list" flat
 
 ```json
 {
   "plan_version": "1.0",
-  "generated_at": "2026-05-13T10:00:00Z",
   "source_folder": "/path/to/cpp/src",
   "scope": "ModuleSample01",
   "summary": {
+    "total_items": 215,
     "total_modules": 5,
     "total_classes": 23,
     "total_functions": 215,
@@ -390,45 +448,62 @@ porting-output/
     "leaf_nodes": 47,
     "parallel_batches": 8
   },
+  "conversion_list": [
+    {
+      "stt": 1,
+      "id": "F001",
+      "module": "UtilsLib",
+      "class": "CStringUtil",
+      "function": "Trim",
+      "signature": "CString Trim(CString)",
+      "cpp_file": "utils/CString.cpp",
+      "java_package": "utils",
+      "java_class": "CStringUtil.java",
+      "wave": 0,
+      "is_leaf": true,
+      "dependencies": [],
+      "compat_needed": ["CStringCompat"]
+    },
+    {
+      "stt": 2,
+      "id": "F002",
+      "module": "UtilsLib",
+      "class": "CStringUtil",
+      "function": "Split",
+      "signature": "CArray<CString> Split(CString, TCHAR)",
+      "cpp_file": "utils/CString.cpp",
+      "java_package": "utils",
+      "java_class": "CStringUtil.java",
+      "wave": 0,
+      "is_leaf": true,
+      "dependencies": [],
+      "compat_needed": ["CStringCompat", "CArrayCompat"]
+    }
+  ],
   "waves": [
     {
       "wave": 0,
-      "label": "Foundation - No Dependencies",
-      "can_parallel": true,
-      "modules": [
-        {
-          "module": "UtilsLib",
-          "is_leaf": true,
-          "classes": [
-            {
-              "class": "CStringUtil",
-              "is_leaf": true,
-              "functions": [
-                {"order": "0.1", "name": "Trim", "signature": "CString Trim(CString)", "leaf": true, "dependencies": [], "compat_needed": ["CStringCompat"]},
-                {"order": "0.2", "name": "Split", "signature": "CArray<CString> Split(CString, TCHAR)", "leaf": true, "dependencies": [], "compat_needed": ["CStringCompat", "CArrayCompat"]}
-              ]
-            }
-          ]
-        }
-      ]
+      "items": ["F001", "F002", "F003", ...],
+      "can_parallel": true
     }
   ],
-  "leaf_nodes": [
-    {"module": "UtilsLib", "class": "CStringUtil", "function": "Trim", "wave": 0},
-    {"module": "UtilsLib", "class": "CStringUtil", "function": "Split", "wave": 0}
-  ],
-  "circular_dependencies": [
-    {
-      "scc_id": 1,
-      "modules": ["ModA", "ModB"],
-      "resolution": "Extract interface IModBridge, implement in both"
-    }
-  ],
-  "execution_order": [
-    {"batch": 1, "parallel": true, "items": ["0.1", "0.2", "0.3", ...]},
-    {"batch": 2, "parallel": false, "items": ["1.1", "1.2"], "depends_on": [1]}
-  ]
+  "leaf_nodes": ["F001", "F002", "F003", ...],
+  "circular_dependencies": [...]
 }
+```
+
+### 5.4 Output Files (Updated)
+
+```
+porting-output/
+└── porting-plan/
+    ├── porting-plan.md              # ✅ BẮT BUỘC: Full listing table (tất cả functions)
+    │                                   + grouped by wave
+    │                                   + leaf nodes list
+    │                                   + circular deps
+    ├── porting-plan.json            # machine-readable (có conversion_list)
+    ├── leaf-nodes.md                # Danh sách leaf nodes cho parallel
+    └── circular-deps.md             # Circular dependencies + resolution
 ```
 
 ---
@@ -471,30 +546,39 @@ circular = [scc for scc in sccs if len(scc.members) > 1]
 
 ---
 
-## Phase 7: Generate Output Files
+## Phase 7: Validate Plan Completeness
 
-### 7.1 porting-plan.md (Human-Readable)
+> **BẮT BUỘC:** Trước khi handoff, PHẢI xác nhận plan bao phủ 100% functions.
 
-Định dạng Markdown với:
-- ✅ Số thứ tự rõ ràng (0.1, 0.2, 1.1, 1.2, ...)
-- ✅ Giải thích **lý do** cho mỗi ordering decision
-- ✅ Leaf node markers (🌿)
-- ✅ Compat layer requirements
-- ✅ Circular dependency warnings
-- ✅ Wave summary
+### 7.1 Coverage Check
 
-### 7.2 porting-plan.json (Machine-Readable)
+```python
+# So sánh: tổng functions từ MCP Graph vs tổng items trong conversion_list
+total_in_source = len(all_functions)          # từ Phase 1.1
+total_in_plan = len(conversion_list)           # từ Phase 5.3
+missing = total_in_source - total_in_plan
 
-Định dạng JSON với:
-- ✅ Structured waves → modules → classes → functions
-- ✅ Dependency graph edges
-- ✅ Leaf node list cho parallel execution
-- ✅ Circular deps với resolution
-- ✅ Compat requirements per function
+if missing > 0:
+    print(f"❌ WARNING: {missing} functions NOT in plan!")
+    # Identify thiếu functions và add vào cuối plan với wave "UNSCHEDULED"
+```
 
----
+### 7.2 Numbering Validation
 
-## 🔧 MCP Tools Reference
+```python
+# Xác nhận:
+# - Mọi function đều có ID duy nhất (F001..F{total})
+# - Không trùng ID, không gap
+# - STT sequential từ 1 → total
+# - Mọi dependency reference đều trỏ đến ID có tồn tại
+```
+
+### 7.3 Handoff
+
+```markdown
+✅ Plan validated: {total_items} items | {waves} waves | {leaf_nodes} leaf nodes
+Handoff → hi.porting-file-structure: Phase 2 — File Structure Porting
+```
 
 ### graph_mcp (`http://127.0.0.1:8788/mcp`)
 
@@ -553,8 +637,9 @@ START
   │
   ├─ Phase 5: Generate Execution Plan
   │     ├─ Merge all ordering data
-  │     ├─ Assign sequential numbers
-  │     ├─ Group parallel batches
+  │     ├─ Assign global sequential IDs (F001..F{N})
+  │     ├─ Build consolidated full listing table (TẤT CẢ functions)
+  │     ├─ Group by wave
   │     └─ Output: porting-plan.md + porting-plan.json
   │
   ├─ Phase 6: Circular Dependency Handling
@@ -562,10 +647,11 @@ START
   │     ├─ Propose resolution strategy
   │     └─ Output: circular-deps.md
   │
-  └─ Phase 7: Finalize & Handoff
-        ├─ Validate plan completeness
-        ├─ Handoff → hi.porting-file-structure (Phase 1)
-        └─ Handoff → hi.porting-cpp-to-java (Orchestrator)
+  └─ Phase 7: Validate Plan Completeness
+        ├─ Validate 100% coverage (all functions in plan)
+        ├─ Validate numbering (no gap, no duplicate ID)
+        ├─ Validate dependencies (all refs point to existing IDs)
+        └─ Handoff → hi.porting-file-structure (Phase 2)
 ```
 
 ---
@@ -575,7 +661,7 @@ START
 ```markdown
 # 🚀 Porting Execution Plan: ModuleSample01
 
-> Generated: 2026-05-13 | Source: /path/to/cpp/src | MCP: graph_mcp + mind_mcp
+> Generated: 2026-05-13 | Source: /path/to/cpp/src | Scope: ModuleSample01
 
 ---
 
@@ -587,92 +673,77 @@ START
 | Classes | 12 |
 | Functions | 87 |
 | Waves | 4 |
-| Circular Deps | 1 (CModuleSampleHandler ↔ CModuleSampleDispatcher) |
-| Leaf Nodes | 23 (26.4%) — can be ported in parallel |
+| Circular Deps | 1 |
+| Leaf Nodes | 23 (26.4%) |
+| **STT Range** | **F001 → F087** |
 
 ---
 
-## 🔄 WAVE 0 — Foundation (No Dependencies) — CAN PARALLEL
+## 📋 FULL PORTING LIST (87 functions)
 
-> Các module/class/function không phụ thuộc vào bất kỳ thành phần nào khác.
-> **Có thể port song song tất cả items trong wave này.**
-
-### Module: UtilsLib (🌿 Leaf Module)
-
-**Lý do:** Module utility thuần, không import bất kỳ module nào khác trong dự án.
-
-#### Class: CStringUtil (🌿 Leaf Class)
-
-| # | Function | Signature | 🌿 | Compat | Lý do ưu tiên |
-|---|----------|-----------|-----|--------|---------------|
-| **0.1** | `Trim` | `CString Trim(CString)` | 🌿 | CStringCompat | Không gọi hàm nào khác → làm đầu tiên |
-| **0.2** | `Split` | `CArray<CString> Split(CString, TCHAR)` | 🌿 | CStringCompat, CArrayCompat | Độc lập với Trim |
-| **0.3** | `Format` | `CString Format(CString, ...)` | 🌿 | CStringCompat | Độc lập |
-
-#### Class: CFileUtil (🌿 Leaf Class)
-
-| # | Function | Signature | 🌿 | Compat | Lý do |
-|---|----------|-----------|-----|--------|------|
-| **0.4** | `FileExists` | `BOOL FileExists(CString)` | 🌿 | CStringCompat, CFileCompat | Độc lập |
-| **0.5** | `ReadAllText` | `CString ReadAllText(CString)` | 🌿 | CStringCompat, CFileCompat | Độc lập, gọi FileExists nội bộ |
+| STT | ID   | Module       | Class                     | Function          | Signature                     | C++ Path           | Java Pkg     | Wave | Leaf | Depends On  |
+|-----|------|-------------|---------------------------|-------------------|-------------------------------|--------------------|--------------|------|------|-------------|
+| 1   | F001 | UtilsLib    | CStringUtil               | Trim              | CString Trim(CString)         | utils/CString.cpp  | utils        | W0   | 🌿   | —           |
+| 2   | F002 | UtilsLib    | CStringUtil               | Split             | CArray<CString> Split(...)    | utils/CString.cpp  | utils        | W0   | 🌿   | —           |
+| 3   | F003 | UtilsLib    | CStringUtil               | Format            | CString Format(CString, ...)  | utils/CString.cpp  | utils        | W0   | 🌿   | —           |
+| 4   | F004 | UtilsLib    | CFileUtil                 | FileExists        | BOOL FileExists(CString)      | utils/CFile.cpp    | utils        | W0   | 🌿   | —           |
+| 5   | F005 | UtilsLib    | CFileUtil                 | ReadAllText       | CString ReadAllText(CString)  | utils/CFile.cpp    | utils        | W0   | 🌿   | F004        |
+| ... | ...  | ...         | ...                       | ...               | ...                           | ...                | ...          | ...  | ...  | ...         |
+| 23  | F023 | DataLayer   | CDbConfig                 | LoadDbConfig      | BOOL LoadDbConfig(CString)    | data/DbConfig.cpp  | data         | W1   |      | F003, F005  |
+| 24  | F024 | DataLayer   | CDbConfig                 | ParseConnection   | BOOL ParseConnection(LPTSTR)  | data/DbConfig.cpp  | data         | W1   |      | F003        |
+| ... | ...  | ...         | ...                       | ...               | ...                           | ...                | ...          | ...  | ...  | ...         |
+| 85  | F085 | ModuleSample01 | CModuleSampleActivity   | DoWork            | BOOL DoWork(DWORD, LPTSTR)    | act/Activity.cpp   | act          | W3   |      | F023, F067  |
+| 86  | F086 | ModuleSample01 | CModuleSampleActivity   | OnReceive         | void OnReceive(LPVOID, DWORD) | act/Activity.cpp   | act          | W3   |      | F085        |
+| 87  | F087 | ModuleSample01 | CModuleSampleActivity   | Cleanup           | void Cleanup()                | act/Activity.cpp   | act          | W4   |      | F086        |
 
 ---
+
+## 🔄 WAVE 0 — Foundation (No Dependencies — CAN PARALLEL)
+
+| STT | ID   | Module    | Class         | Function    | Leaf |
+|-----|------|-----------|---------------|-------------|------|
+| 1   | F001 | UtilsLib  | CStringUtil   | Trim        | 🌿   |
+| 2   | F002 | UtilsLib  | CStringUtil   | Split       | 🌿   |
+| 3   | F003 | UtilsLib  | CStringUtil   | Format      | 🌿   |
+| 4   | F004 | UtilsLib  | CFileUtil     | FileExists  | 🌿   |
+| 5   | F005 | UtilsLib  | CFileUtil     | ReadAllText |      |
+| ... | ...  | ...       | ...           | ...         | ...  |
 
 ## 🔄 WAVE 1 — Utility Consumers
 
-> Các class/function phụ thuộc vào Wave 0.
+| STT | ID   | Module     | Class      | Function        | Depends On |
+|-----|------|------------|------------|-----------------|------------|
+| 23  | F023 | DataLayer  | CDbConfig  | LoadDbConfig    | F003, F005 |
+| 24  | F024 | DataLayer  | CDbConfig  | ParseConnection | F003       |
 
-### Module: DataLayer
+## 🔄 WAVE 2 — Business Logic
 
-**Lý do:** DataLayer cần CStringUtil.Format (Wave 0) và CFileUtil.ReadAllText (Wave 0).
+...
 
-#### Class: CDbConfig
+## 🔄 WAVE 3 — Top-Level (Circular)
 
-| # | Function | Dependencies | Compat | Lý do thứ tự |
-|---|----------|-------------|--------|-------------|
-| **1.1** | `LoadDbConfig` | 0.3 (Format), 0.5 (ReadAllText) | CStringCompat, CFileCompat | Cần đọc config file → parse string |
+...
 
 ---
 
 ## 🌿 LEAF NODES — Parallel Execution Candidates
 
-Các function này có thể được port **đồng thời** (không phụ thuộc lẫn nhau):
-
-| Batch | Functions | Module | Class |
-|-------|-----------|--------|-------|
-| P0 | 0.1, 0.2, 0.3 | UtilsLib | CStringUtil |
-| P0 | 0.4, 0.5 | UtilsLib | CFileUtil |
-| P1 | 1.3, 1.4 | DataLayer | CDbHelper |
-| P2 | 2.7, 2.8, 2.9 | ModuleSample01 | CModuleSampleData |
+| ID   | Module    | Class         | Function    | Wave |
+|------|-----------|---------------|-------------|------|
+| F001 | UtilsLib  | CStringUtil   | Trim        | W0   |
+| F002 | UtilsLib  | CStringUtil   | Split       | W0   |
+| F003 | UtilsLib  | CStringUtil   | Format      | W0   |
+| F004 | UtilsLib  | CFileUtil     | FileExists  | W0   |
+| ...  | ...       | ...           | ...         | ...  |
 
 ---
 
 ## ⚠️ CIRCULAR DEPENDENCIES
 
 ### SCC-1: CModuleSampleHandler ↔ CModuleSampleDispatcher
-
 - **CModuleSampleHandler::ProcessMessage** → CModuleSampleDispatcher::Dispatch
 - **CModuleSampleDispatcher::Dispatch** → CModuleSampleHandler::HandleResponse
 - **Resolution:** Extract `IMessageHandler` interface
-  ```
-  IMessageHandler (port first)
-    ├── CModuleSampleDispatcher (port second, depends on IMessageHandler)
-    └── CModuleSampleHandler (port third, implements IMessageHandler)
-  ```
-
----
-
-## 📋 FULL EXECUTION ORDER
-
-| # | Module | Class | Function | Wave | Leaf | Depends On |
-|---|--------|-------|----------|------|------|-----------|
-| 0.1 | UtilsLib | CStringUtil | Trim | 0 | 🌿 | — |
-| 0.2 | UtilsLib | CStringUtil | Split | 0 | 🌿 | — |
-| 0.3 | UtilsLib | CStringUtil | Format | 0 | 🌿 | — |
-| 0.4 | UtilsLib | CFileUtil | FileExists | 0 | 🌿 | — |
-| 0.5 | UtilsLib | CFileUtil | ReadAllText | 0 | 🌿 | 0.4 |
-| 1.1 | DataLayer | CDbConfig | LoadDbConfig | 1 | | 0.3, 0.5 |
-| 1.2 | DataLayer | CDbConfig | ParseConnection | 1 | | 0.3 |
 | ... | ... | ... | ... | ... | ... | ... |
 | 4.1 | ModuleSample01 | CModuleSampleActivity | DoWork | 4 | | 2.3, 3.1 |
 | 4.2 | ModuleSample01 | CModuleSampleActivity | OnReceive | 4 | | 4.1 |
@@ -683,5 +754,5 @@ Các function này có thể được port **đồng thời** (không phụ thu�
 
 ---
 
-**Owner**: baka3k  
+**Owner**: Hiep  
 **Version**: 1.0 — 2026-05-13

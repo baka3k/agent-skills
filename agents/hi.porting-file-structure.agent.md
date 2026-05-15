@@ -1,5 +1,27 @@
 ---
 description: Port cấu trúc file từ C++ sang Java: extract skeleton từ MCP Graph, generate Java file với 1-1 mapping class/function/params, phân tích compat requirements.
+variables:
+  input:
+    - name: $SOURCE_FOLDER
+      source: CLI --source-folder
+      required: true
+    - name: $OUTPUT_DIR
+      source: CLI --output (default: porting-output/)
+      required: false
+  loop:
+    - name: $CURRENT_FILE
+      source: State.current_file (from file_worklist)
+      required: true
+    - name: $CURRENT_INDEX
+      source: State.current_file_index
+      required: true
+    - name: $WORKLIST
+      source: State.file_worklist (from plan-generator)
+      required: true
+  internal:
+    - name: porting-plan.json
+      source: porting-output/porting-plan/porting-plan.json
+      required: true
 handoffs:
   - label: Port Functions in This File
     agent: hi.porting-function

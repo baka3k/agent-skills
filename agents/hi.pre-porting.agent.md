@@ -1,5 +1,23 @@
 ---
 description: Prepare comprehensive pre-porting analysis for C++ to Java migration: compatibility gap assessment, type mappings, compat layer design, migration roadmap, and risk analysis.
+variables:
+  input:
+    - name: $SOURCE_FOLDER
+      source: CLI --source-folder
+      required: true
+    - name: $MODULE_NAME
+      source: CLI --module
+      required: true
+    - name: $OUTPUT_DIR
+      source: CLI --output (default: pre-porting-data/)
+      required: false
+  preflight:
+    - name: pre-porting-data/type-mappings.json
+      source: output file (write)
+      required: true
+    - name: pre-porting-data/migration-roadmap.md
+      source: output file (write)
+      required: true
 handoffs:
   - label: Generate Porting Plan
     agent: hi.porting-plan-generator
@@ -246,6 +264,25 @@ Dựa trên dependency graph từ MCP, tạo lộ trình:
 | Compat layer overhead | < 10% |
 | Function parity | 100% critical functions |
 | Manual review needed | < 20% functions |
+
+### Step 9.5: Folder→Package Mapping
+
+> **Output thêm vào `type-mappings.json`:** ánh xạ C++ folder path → Java package name
+
+```json
+{
+  "folder_to_package": {
+    "rule": "C++ folder path → Java package name (GIỮ NGUYÊN 100%, chỉ thay '/' → '.')",
+    "examples": [
+      {"cpp_folder": "SampleModule01/",          "java_package": "SampleModule01"},
+      {"cpp_folder": "SampleModule01/sub/",     "java_package": "SampleModule01.sub"},
+      {"cpp_folder": "Common/Utils/",   "java_package": "Common.Utils"},
+      {"cpp_folder": "Interface/Msg/",  "java_package": "Interface.Msg"}
+    ],
+    "enforcement": "File vật lý .java PHẢI nằm đúng thư mục tương ứng: package SampleModule01.sub → thư mục SampleModule01/sub/"
+  }
+}
+```
 
 ### Step 10: Resource Preparation
 
