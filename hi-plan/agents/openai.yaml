@@ -1,4 +1,0 @@
-interface:
-  display_name: "HI Plan"
-  short_description: "Create detailed technical implementation plans with MCP-assisted analysis."
-  default_prompt: "Use $hi-plan to create a detailed implementation plan for this feature, analyzing codebase context with mind_mcp and graph_mcp."
