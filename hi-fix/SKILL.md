@@ -1,20 +1,21 @@
 ---
 name: hi:fix
 description: "ALWAYS activate before fixing ANY bug, error, test failure, CI/CD issue, type error, lint, log error, UI issue, code problem."
-argument-hint: "[issue] --auto|--review|--quick|--parallel"
+argument-hint: "[issue] [--standard|--deep|--parallel|--review]  — default: Quick mode"
 metadata:
   author: baka3k
-  version: "1.0.0"
+  version: "2.0.0"
 ---
 # Fix - Issue Resolution
 
 ## Mode Selection
 | Flag | When |
 |------|------|
-| --quick | Type errors, lint, trivial (auto-triggered) |
+| default | Quick: 1 file, type/lint, lỗi rõ ràng |
+| --standard | Standard: 2-5 files, cần debug đầy đủ |
+| --deep | Deep: 5+ files, architecture impact |
 | --parallel | 2+ independent issues |
 | --review | Human-in-the-loop at each step |
-| default | Autonomous, auto-approve if score>=9.5 |
 
 ## Process Flow
 `[Scout] -> [Diagnose] -> [Fix] -> [Verify+Prevent] -> [Finalize]`
@@ -23,36 +24,36 @@ metadata:
 Do NOT fix before Scout + Diagnose. Find ROOT CAUSE first. If 3+ fix attempts fail, STOP and question architecture with user.
 </HARD-GATE>
 
-### Step 1: Scout
-Activate hi:scout or 2-3 parallel Explore agents. Map: affected files, deps, tests, git log.
+### Step 1: Scout (locate-only, default)
+Locate affected files và đọc lỗi. 1 agent là đủ.
+Standard/Deep: activate hi:scout hoặc 2-3 parallel agents.
 
 ### Step 2: Diagnose (MANDATORY)
 Capture pre-fix state: exact error, stack traces, logs.
 Trace backward: symptom -> immediate cause -> contributing factor -> ROOT CAUSE.
-If 2+ hypotheses fail -> activate hi:problem-solving.
+Nếu khó: activate hi:debug. Nếu 2+ hypotheses fail -> activate hi:problem-solving.
 
 ### Step 3: Fix
 Fix ROOT CAUSE. Minimal changes. Follow existing patterns.
 
 ### Step 4: Verify + Prevent
-1. Re-run EXACT commands from pre-fix state. Compare before/after.
-2. Add regression test (fails without fix, passes with fix).
-3. Add guards where applicable.
+Quick: typecheck + lint (mặc định)
+Standard: + build + test
+Deep: comprehensive (edge cases, security, perf)
 
 ### Step 5: Finalize
-1. Report: root cause, changes, prevention
-2. Update docs if needed
-3. Ask to commit
+Quick: report ngắn -> ask commit (skip docs, skip review)
+Standard/Deep: report -> review (nếu --review) -> docs -> commit
 
 ## Workflows
 
-### Quick (1 file, type/lint, clear error)
+### Quick (default, 1 file, type/lint, clear error)
 Scout (locate only) -> Diagnose (read error) -> Fix -> Verify (typecheck+lint) -> Done
 
-### Standard (2-5 files)
-Full Scout -> Full Diagnose -> Fix -> Verify (typecheck+lint+build+test) -> Review -> Finalize
+### Standard (--standard, 2-5 files)
+Full Scout -> Full Diagnose (gọi hi:debug nếu cần) -> Fix -> Verify (typecheck+lint+build+test) -> Review (nếu --review) -> Finalize
 
-### Deep (5+ files, architecture impact)
+### Deep (--deep, 5+ files, architecture impact)
 Parallel Scout + Diagnose + Research -> Fix -> Comprehensive Verify -> Review -> Finalize
 
 ### Parallel (2+ independent)

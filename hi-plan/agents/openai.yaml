@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan"
+  short_description: "Design architectures, create implementation plans, and manage technical roadmaps."
+  default_prompt: "Use $plan to design implementation plans, run scope challenges, adversarial reviews (red-team), and critical question validation (validate)."

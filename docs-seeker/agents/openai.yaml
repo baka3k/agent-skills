@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docs Seeker"
+  short_description: "Search library/framework documentation via llms.txt standard using automated scripts."
+  default_prompt: "Use $docs-seeker to look up API docs, GitHub repository analysis, technical documentation, and latest library features."

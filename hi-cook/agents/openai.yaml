@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cook"
+  short_description: "Implement features end-to-end with research, planning, testing, and review gates."
+  default_prompt: "Use $cook to implement features with full workflow: research -> plan -> implement -> test -> review -> finalize. Supports modes: --fast, --auto, --parallel, --no-test."

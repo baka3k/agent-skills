@@ -1,10 +1,10 @@
 ---
 name: hi:cook
 description: "ALWAYS activate before implementing ANY feature, plan, or fix."
-argument-hint: "[task] [--fast|--parallel|--auto|--no-test]"
+argument-hint: "[task] [--full|--review|--auto|--no-test]  — default: fast mode"
 metadata:
   author: baka3k
-  version: "2.2.0"
+  version: "3.0.0"
 ---
 # Cook - Feature Implementation
 
@@ -16,52 +16,47 @@ User override: "just code it" or "skip planning" - then respect.
 ## Intent Detection
 | Input | Mode | Behavior |
 |-------|------|----------|
-| --fast, "quick", "asap" | fast | Skip research, scout->plan->code |
-| --auto, "trust me", "yolo" | auto | Auto-approve all, no review stops |
-| --parallel, 3+ features | parallel | Multi-agent |
+| --full, "full" | full | Full workflow với research + review |
+| --review | review | Có review gate ở cuối |
+| --auto, "trust me", "yolo" | auto | Auto-approve all |
 | --no-test | no-test | Skip testing |
 | Path to plan.md/phase-*.md | code | Execute existing plan |
-| Default | interactive | Full workflow with review gates |
+| Default | fast | Skip research, skip review, test nhanh |
 
 ## Process Flow
-`[Research?] -> [Plan?] -> [Implement] -> [Test] -> [Review] -> [Finalize]`
+`[Plan] -> [Implement] -> [Test] -> [Finalize]`
 
 ## Mode Matrix
-| Mode | Research | Testing | Review Gates |
-|------|----------|---------|--------------|
-| interactive | Yes | Yes | Stops at each |
-| auto | Yes | Yes | Skipped |
-| fast | No | Yes | Stops at each |
-| parallel | Optional | Yes | Stops at each |
-| no-test | Yes | No | Stops at each |
+| Mode | Research | Review | Testing |
+|------|----------|--------|---------|
+| fast (default) | Skip | Skip | Run command |
+| full | Yes | MUST | Run command |
+| review | Skip | MUST | Run command |
+| auto | Skip | Auto-pass | Run command |
+| no-test | Skip | Skip | Skip |
 
 ## Steps
 
-### Step 1: Research (skip fast/code)
-Spawn researcher + hi:scout. Reports <=150 lines. Gate: user approves.
+### Step 1: Plan (skip if plan.md provided)
+- Dùng `sequential-thinking` để phân tích task ngắn gọn
+- Dùng `docs-seeker` nếu cần tra cứu tài liệu
+- Không spawn planner riêng. Gọi `hi:plan --fast` inline nếu cần.
 
-### Step 2: Plan (skip code)
-Spawn planner. Fast: /hi:plan --fast. Gate: user validates.
+### Step 2: Implement
+Execute tasks trực tiếp. TaskUpdate in_progress trên mỗi task.
+Parallel mode: launch fullstack-developer per phase.
 
-### Step 3: Implement
-Execute phase tasks. TaskUpdate in_progress on start.
-Parallel: launch fullstack-developer per phase.
+### Step 3: Test (skip no-test)
+Run test command. Xem output. Nếu fail:
+  - Lần 1-2: tự phân tích và fix
+  - Lần 3+: spawn `hi:fix` để debug chuyên sâu
+Không spawn tester riêng.
 
-### Step 4: Test (skip no-test)
-MUST spawn tester. 100% pass required. Failures -> spawn debugger -> fix -> repeat.
+### Step 4: Finalize
+1. TaskUpdate all tasks complete
+2. git commit
+3. /hi:journal
 
-### Step 5: Review
-MUST spawn code-reviewer. Score>=9.5 + 0 critical = auto-approve (auto mode only).
-Interactive: max 3 fix cycles, user approves.
-
-### Step 6: Finalize
-1. project-manager -> sync-back all phases
-2. docs-manager -> update ./docs
-3. TaskUpdate all tasks complete
-4. git-manager -> commit
-5. /hi:journal
-
-## Review Cycle
-- Interactive: Run code-reviewer -> score, critical, warnings -> AskUserQuestion
-- Auto: score>=9.5 & 0 critical = auto-approve
-- Critical issues always block: Security, Performance (O(n^2) where O(n) possible), Architecture violations
+## Review (optional, flag --review hoặc full mode)
+Run code-reviewer. Score>=9.5 + 0 critical = auto-approve (auto mode only).
+Max 3 fix cycles. Critical issues always block: Security, Performance, Architecture violations.

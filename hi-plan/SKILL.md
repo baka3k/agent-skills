@@ -1,10 +1,10 @@
 ---
 name: hi:plan
 description: "Plan implementations, design architectures, create technical roadmaps with detailed phases."
-argument-hint: "[task] OR [archive|red-team|validate]"
+argument-hint: "[task] [--full|--hard|--parallel|--two|--no-tasks]  — default: fast mode. Sub: archive|red-team|validate"
 metadata:
   author: baka3k
-  version: "1.0.0"
+  version: "2.0.0"
 ---
 # Plan - Implementation Planning
 
@@ -19,45 +19,44 @@ metadata:
 ## Default (No Arguments)
 | Operation | Description |
 |-----------|-------------|
-| (default) | Create implementation plan |
+| (default) | Create implementation plan (fast mode) |
+| `--full` | Full flow: research + scope challenge + red team + validate |
 | `archive` | Archive plans + journal |
 | `red-team` | Adversarial review |
 | `validate` | Critical questions interview |
 
-If invoked without arguments, use AskUserQuestion to present options.
+If invoked without arguments, run fast mode trực tiếp (không AskUserQuestion).
 
 ## Workflow Modes
 | Flag | Mode | Research | Red Team | Validation |
 |------|------|----------|----------|------------|
-| --auto | Auto-detect | Follows mode | Follows | Follows |
-| --fast | Fast | Skip | Skip | Skip |
+| default / --fast | Fast | Skip | Skip | Skip |
+| --full | Full | 1 researcher | Optional | Optional |
 | --hard | Hard | 2 researchers | Yes | Optional |
 | --parallel | Parallel | 2 researchers | Yes | Optional |
 | --two | Two approaches | 2+ researchers | After select | After select |
 
 Add `--no-tasks` to skip task hydration.
 
-## Process Flow
+## Process Flow (default fast)
+1. **Cross-Plan Scan** -> Chỉ quét nếu có plan active (scan nhanh)
+2. **Scope Challenge** -> Skip (fast)
+3. **Codebase Analysis** -> Đọc docs, scout nếu cần (không spawn researcher)
+4. **Plan Documentation** -> Write plan.md + phase-XX.md
+5. **Hydrate Tasks** -> TaskCreate per phase (--no-tasks để skip)
+6. **Output** -> Absolute path
+
+## Full Flow (--full)
 1. **Pre-Creation Check** -> Check Plan Context
 2. **Cross-Plan Scan** -> Detect blockedBy/blocks, update both
-3. **Scope Challenge** -> Run 3 questions, select mode (EXPANSION/HOLD/REDUCTION)
-   - Skip if --fast or trivial task (<20 words)
-4. **Mode Detection** -> Auto or explicit flag
-5. **Research** -> Spawn researchers (skip fast)
-6. **Codebase Analysis** -> Read docs, scout if needed
-7. **Plan Documentation** -> Write plan.md + phase-XX.md
-8. **Red Team** -> `/hi:plan red-team {path}` (hard/parallel/two)
-9. **Validate** -> `/hi:plan validate {path}` (hard/parallel/two)
-10. **Hydrate Tasks** -> TaskCreate per phase (default, --no-tasks to skip)
-11. **Output** -> Absolute path + cook command
-
-## Scope Challenge (Step 0)
-Answer 3 questions before research:
-1. What already exists? (reuse, don't rebuild)
-2. What's minimum change set? (defer non-blocking)
-3. Complexity check (>8 files? >2 new classes? >3 phases?)
-
-Then ask user: EXPANSION / HOLD / REDUCTION.
+3. **Scope Challenge** -> Run 3 questions, select mode
+4. **Research** -> Spawn 1 researcher
+5. **Codebase Analysis** -> Read docs, scout if needed
+6. **Plan Documentation** -> Write plan.md + phase-XX.md
+7. **Red Team** -> `/hi:plan red-team {path}`
+8. **Validate** -> `/hi:plan validate {path}`
+9. **Hydrate Tasks** -> TaskCreate per phase
+10. **Output** -> Absolute path + cook command
 
 ## Output Requirements
 - Plans in CURRENT WORKING PROJECT DIRECTORY (not user home)

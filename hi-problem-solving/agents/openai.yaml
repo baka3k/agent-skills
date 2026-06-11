@@ -1,0 +1,4 @@
+interface:
+  display_name: "Problem Solving"
+  short_description: "Apply systematic techniques when stuck: simplification cascades, collision-zone thinking, meta-pattern recognition, inversion exercises."
+  default_prompt: "Use $problem-solving when stuck on complex issues: identify stuck-type, apply matching technique, document insights."

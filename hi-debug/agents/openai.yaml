@@ -1,0 +1,4 @@
+interface:
+  display_name: "Debug"
+  short_description: "Debug systematically with root cause analysis, multi-layer validation, log/CI analysis, and performance diagnostics."
+  default_prompt: "Use $debug for systematic debugging: investigate root cause, trace call stacks, analyze logs/CI, verify before claiming fix."
